@@ -166,10 +166,10 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </div>
 
             <div className="relative opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] hidden md:block">
-              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-cyan-50 to-blue-100 flex items-center justify-center transition-transform hover:scale-105 duration-500">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-cyan-50 to-emerald-50 flex items-center justify-center transition-transform hover:scale-105 duration-500">
                 <img 
-                  src="https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/760cf5be-4906-447f-9483-94b24e9aff93.jpg" 
-                  alt="Learning Journey Path" 
+                  src="https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/28f73409-8d94-4085-b102-3b333ea7590b.jpg" 
+                  alt="Learning Journey Path with Nature" 
                   className="w-full h-full object-cover rounded-3xl"
                 />
               </div>
@@ -401,7 +401,14 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsRegister(!isRegister)}
+              onClick={() => {
+                setIsRegister(!isRegister);
+                setEmail('');
+                setPassword('');
+                setName('');
+                setPhone('');
+                setSelectedPreferences([]);
+              }}
               className="text-sm text-primary hover:underline"
             >
               {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}

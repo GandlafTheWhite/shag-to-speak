@@ -75,6 +75,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSetsDialogOpen, setIsSetsDialogOpen] = useState(false);
+  const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -209,6 +211,57 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     }
   };
 
+  const handleAiGenerate = async () => {
+    if (!aiPrompt.trim()) return;
+
+    try {
+      setIsLoading(true);
+      const response = await fetch('https://functions.poehali.dev/f2e3df61-25fc-4fad-b66c-a5f08c97df77', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id.toString()
+        },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          count: 15
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Не удалось сгенерировать слова');
+      }
+
+      const result = await response.json();
+      
+      setWords([...result.words.map((w: ApiWord) => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count
+      })), ...words]);
+      
+      updateUser({ word_count: words.length + result.count });
+      setAiPrompt('');
+      setIsAiDialogOpen(false);
+      
+      toast({
+        title: 'Слова добавлены!',
+        description: `ИИ добавил ${result.count} слов по вашему запросу`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось сгенерировать слова',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -235,10 +288,10 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
             </SelectContent>
           </Select>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="w-full md:w-auto">
+                <Button className="flex-1 md:flex-none">
                   <Icon name="Plus" size={18} className="mr-2" />
                   Добавить слова
                 </Button>
@@ -260,8 +313,43 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
                       onChange={(e) => setNewWord(e.target.value)}
                     />
                   </div>
-                  <Button onClick={handleAddWord} className="w-full">
-                    Добавить
+                  <Button onClick={handleAddWord} className="w-full" disabled={isLoading}>
+                    {isLoading ? 'Добавление...' : 'Добавить'}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" className="flex-1 md:flex-none">
+                  <Icon name="Sparkles" size={18} className="mr-2" />
+                  Попросить ИИ
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>ИИ добавит слова за вас</DialogTitle>
+                  <DialogDescription>
+                    Какие слова вы хотите добавить? После вашего запроса ИИ добавит 15 слов в ваш словарь.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ai-prompt">Ваш запрос</Label>
+                    <Input
+                      id="ai-prompt"
+                      placeholder="например: слова для путешествий или деловая лексика"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                    />
+                  </div>
+                  <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
+                    <Icon name="Info" size={16} className="inline mr-2" />
+                    ИИ подберёт 15 английских слов с переводами и примерами по вашему запросу
+                  </div>
+                  <Button onClick={handleAiGenerate} className="w-full" disabled={isLoading || !aiPrompt.trim()}>
+                    {isLoading ? 'Генерация...' : 'Сгенерировать слова'}
                   </Button>
                 </div>
               </DialogContent>
@@ -269,11 +357,11 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
             <Button 
               variant="outline" 
-              className="w-full md:w-auto"
+              className="flex-1 md:flex-none"
               onClick={() => setIsSetsDialogOpen(true)}
             >
               <Icon name="Package" size={18} className="mr-2" />
-              Наборы слов
+              Наборы
             </Button>
           </div>
         </div>
