@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
+import { shouldMarkAsLearned, getProgressMessage } from '@/utils/wordProgress';
 
 interface LearnWordsProps {
   user: User;

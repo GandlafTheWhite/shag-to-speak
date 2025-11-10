@@ -7,23 +7,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
+import { LEARNING_TOPICS } from '@/data/topics';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
 }
-
-const PREFERENCES = [
-  { id: 'travel', label: '✈️ Путешествия' },
-  { id: 'business', label: '💼 Бизнес' },
-  { id: 'technology', label: '💻 Технологии' },
-  { id: 'ecology', label: '🌿 Экология' },
-  { id: 'everyday', label: '🗣️ Повседневное общение' },
-  { id: 'academic', label: '📚 Академический' },
-  { id: 'food', label: '🍕 Еда' },
-  { id: 'health', label: '💊 Здоровье' },
-  { id: 'phrasal_verbs', label: '🔤 Фразовые глаголы' },
-  { id: 'popular_100', label: '⭐ 100 популярных слов' }
-];
 
 const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
@@ -31,6 +19,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -50,19 +39,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
     onLogin(mockUser);
   };
 
-  const handleTestLogin = () => {
-    const testUser: User = {
-      id: 1,
-      name: 'Тестовый пользователь',
-      email: 'test@shagtospeak.com',
-      status: 'free',
-      preferences: ['travel', 'business', 'technology'],
-      word_count: 11,
-      exercises_remaining: 3,
-      daily_exercises_count: 0
-    };
-    onLogin(testUser);
-  };
+
 
   const togglePreference = (prefId: string) => {
     setSelectedPreferences(prev => 
@@ -139,15 +116,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                   <Icon name="ArrowRight" size={20} className="ml-2" />
                 </Button>
                 
-                <Button 
-                  size="lg" 
-                  variant="outline"
-                  className="text-lg px-8 py-6"
-                  onClick={handleTestLogin}
-                >
-                  <Icon name="TestTube" size={20} className="mr-2" />
-                  Тестовый вход
-                </Button>
+
               </div>
 
               <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted-foreground">
@@ -167,11 +136,11 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </div>
 
             <div className="relative animate-scale-in hidden md:block">
-              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
                 <img 
-                  src="https://cdn.poehali.dev/files/25cef0a6-e617-4ccc-9cf9-0f2eddc7fd8e.jpg" 
-                  alt="Learning Journey" 
-                  className="w-full h-full object-cover"
+                  src="https://cdn.poehali.dev/files/877b18d5-3656-4067-adbe-89a2510b72e3.png" 
+                  alt="Balance and Harmony" 
+                  className="w-full h-full object-contain p-8"
                 />
               </div>
             </div>
@@ -259,14 +228,6 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
         <div className="container mx-auto px-4 max-w-4xl text-center">
-          <div className="mb-8">
-            <img 
-              src="https://cdn.poehali.dev/files/ec589e15-511e-4278-962e-1b27cb545ef3.png" 
-              alt="Journey" 
-              className="w-full max-w-2xl mx-auto rounded-2xl shadow-xl"
-            />
-          </div>
-          
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
             Начните свой путь сегодня
           </h2>
@@ -354,26 +315,44 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </div>
 
             {isRegister && (
-              <div className="space-y-3 pt-2">
-                <Label className="text-base">Выберите темы для изучения</Label>
-                <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-1">
-                  {PREFERENCES.map((pref) => (
-                    <div key={pref.id} className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={pref.id}
-                        checked={selectedPreferences.includes(pref.id)}
-                        onCheckedChange={() => togglePreference(pref.id)}
-                      />
-                      <label
-                        htmlFor={pref.id}
-                        className="text-sm font-medium leading-none cursor-pointer"
-                      >
-                        {pref.label}
-                      </label>
-                    </div>
-                  ))}
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="flex items-center gap-2">
+                    Номер телефона 
+                    <span className="text-xs text-muted-foreground font-normal">(необязательно)</span>
+                  </Label>
+                  <Input 
+                    id="phone" 
+                    type="tel" 
+                    placeholder="+7 (999) 123-45-67" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </div>
-              </div>
+
+                <div className="space-y-3 pt-2">
+                  <Label className="text-base">Выберите темы для изучения</Label>
+                  <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto p-1 border rounded-lg">
+                    {LEARNING_TOPICS.map((topic) => (
+                      <div key={topic.id} className="flex items-start space-x-3 p-2 hover:bg-accent/50 rounded transition-colors">
+                        <Checkbox 
+                          id={topic.id}
+                          checked={selectedPreferences.includes(topic.id)}
+                          onCheckedChange={() => togglePreference(topic.id)}
+                          className="mt-1"
+                        />
+                        <label
+                          htmlFor={topic.id}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="font-medium text-sm">{topic.label}</div>
+                          <div className="text-xs text-muted-foreground">{topic.description}</div>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
             <Button type="submit" className="w-full" size="lg">

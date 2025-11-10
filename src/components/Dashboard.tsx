@@ -6,7 +6,7 @@ import type { User } from '@/pages/Index';
 
 interface DashboardProps {
   user: User;
-  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help') => void;
+  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings') => void;
   onLogout: () => void;
 }
 
@@ -25,6 +25,9 @@ const Dashboard = ({ user, onNavigate, onLogout }: DashboardProps) => {
             <span className="text-sm text-muted-foreground">
               {user.name}
             </span>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')}>
+              <Icon name="Settings" size={18} />
+            </Button>
             <Button variant="ghost" size="sm" onClick={onLogout}>
               <Icon name="LogOut" size={18} />
             </Button>

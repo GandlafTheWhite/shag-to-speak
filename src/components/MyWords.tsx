@@ -6,9 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
+import WordSetsDialog from './WordSetsDialog';
+import { WORD_SETS } from '@/data/wordSets';
 
 interface MyWordsProps {
   user: User;
@@ -70,6 +73,7 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [newWord, setNewWord] = useState('');
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSetsDialogOpen, setIsSetsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const filteredWords = words.filter(w => 
@@ -127,6 +131,38 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     });
   };
 
+  const handleAddWordSet = (setId: string) => {
+    const set = WORD_SETS.find(s => s.id === setId);
+    if (!set) return;
+
+    const wordLimit = user.status === 'free' ? 50 : 999;
+    if (words.length + set.words.length > wordLimit) {
+      toast({
+        title: 'Превышен лимит слов',
+        description: `Невозможно добавить набор. Доступно максимум ${wordLimit} слов.`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const newWords: Word[] = set.words.map((word, idx) => ({
+      id: Date.now() + idx,
+      english_word: word,
+      russian_translation: 'перевод генерируется...',
+      examples: ['Примеры будут добавлены'],
+      status: 'learning' as const,
+      recall_count: 0
+    }));
+
+    setWords([...newWords, ...words]);
+    updateUser({ word_count: words.length + newWords.length });
+    
+    toast({
+      title: 'Набор добавлен!',
+      description: `Добавлено ${set.words.length} слов из набора "${set.title}"`
+    });
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -153,36 +189,47 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
             </SelectContent>
           </Select>
 
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
-                <Icon name="Plus" size={18} className="mr-2" />
-                Добавить слова
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Добавить новые слова</DialogTitle>
-                <DialogDescription>
-                  Введите слова через запятую. Перевод и примеры будут сгенерированы автоматически.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="words">Слова</Label>
-                  <Input
-                    id="words"
-                    placeholder="например: serendipity, embrace, resilient"
-                    value={newWord}
-                    onChange={(e) => setNewWord(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleAddWord} className="w-full">
-                  Добавить
+          <div className="flex gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full md:w-auto">
+                  <Icon name="Plus" size={18} className="mr-2" />
+                  Добавить слова
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Добавить новые слова</DialogTitle>
+                  <DialogDescription>
+                    Введите слова через запятую. Перевод и примеры будут сгенерированы автоматически.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="words">Слова</Label>
+                    <Input
+                      id="words"
+                      placeholder="например: serendipity, embrace, resilient"
+                      value={newWord}
+                      onChange={(e) => setNewWord(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleAddWord} className="w-full">
+                    Добавить
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Button 
+              variant="outline" 
+              className="w-full md:w-auto"
+              onClick={() => setIsSetsDialogOpen(true)}
+            >
+              <Icon name="Package" size={18} className="mr-2" />
+              Наборы слов
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4">
@@ -274,6 +321,13 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           </Card>
         )}
       </main>
+
+      <WordSetsDialog
+        open={isSetsDialogOpen}
+        onOpenChange={setIsSetsDialogOpen}
+        user={user}
+        onAddSet={handleAddWordSet}
+      />
     </div>
   );
 };
