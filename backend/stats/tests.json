@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get user statistics",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "words": {
+          "total": "number",
+          "learning": "number",
+          "done": "number"
+        },
+        "exercises": {
+          "total": "number",
+          "accuracy": "number"
+        },
+        "activity": "object"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

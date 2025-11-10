@@ -1,0 +1,46 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Get exercises for user",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "exercises": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Submit exercise answers",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "answers": [
+          {
+            "word_id": 1,
+            "answer": "счастливая случайность"
+          }
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "results": "array",
+        "score": "number",
+        "total": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

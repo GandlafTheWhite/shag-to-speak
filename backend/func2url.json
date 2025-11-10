@@ -1,0 +1,7 @@
+{
+  "auth": "https://functions.poehali.dev/ce741311-6fd7-45a8-9770-f5d6979da050",
+  "api": "https://functions.poehali.dev/7a5c727f-a3c9-4e91-b49b-30b6db8a38b8",
+  "exercises": "https://functions.poehali.dev/dab10f03-8dd4-4dc3-af8d-0cb6fd69aeb7",
+  "words": "https://functions.poehali.dev/d87144a4-ac34-4dce-bdf8-449ebd85b759",
+  "stats": "https://functions.poehali.dev/5e32e154-08b5-4bdf-b5dd-bc3de2075ce1"
+}
