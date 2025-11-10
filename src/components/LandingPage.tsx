@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 
@@ -25,6 +26,7 @@ const PREFERENCES = [
 ];
 
 const LandingPage = ({ onLogin }: LandingPageProps) => {
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,12 +42,26 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       email: email,
       status: 'free',
       preferences: selectedPreferences,
-      word_count: 0,
+      word_count: 11,
       exercises_remaining: 3,
       daily_exercises_count: 0
     };
     
     onLogin(mockUser);
+  };
+
+  const handleTestLogin = () => {
+    const testUser: User = {
+      id: 1,
+      name: 'Тестовый пользователь',
+      email: 'test@shagtospeak.com',
+      status: 'free',
+      preferences: ['travel', 'business', 'technology'],
+      word_count: 11,
+      exercises_remaining: 3,
+      daily_exercises_count: 0
+    };
+    onLogin(testUser);
   };
 
   const togglePreference = (prefId: string) => {
@@ -56,29 +72,248 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
     );
   };
 
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 animate-fade-in">
-      <div className="max-w-4xl w-full text-center mb-12">
-        <h1 className="text-5xl md:text-6xl font-display font-bold text-foreground mb-6">
-          ShagToSpeak
-        </h1>
-        <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          Изучение английских слов шаг за шагом. Путь важнее цели. 
-          Добавляйте слова, выполняйте упражнения, отслеживайте прогресс 
-          и наслаждайтесь процессом. Начните свой путь сегодня!
-        </p>
-      </div>
+  const features = [
+    {
+      icon: 'Brain',
+      title: 'AI-генерация контента',
+      description: 'Автоматическое создание переводов и примеров для каждого слова'
+    },
+    {
+      icon: 'Target',
+      title: 'Персонализация',
+      description: 'Выбирайте темы для изучения — система адаптируется под ваши интересы'
+    },
+    {
+      icon: 'Zap',
+      title: 'Разнообразные упражнения',
+      description: 'Перевод, множественный выбор, синонимы и составление предложений'
+    },
+    {
+      icon: 'TrendingUp',
+      title: 'Отслеживание прогресса',
+      description: 'Наглядная статистика и визуализация вашего пути к знанию языка'
+    },
+    {
+      icon: 'Heart',
+      title: 'Философия пути',
+      description: 'Регулярность важнее интенсивности — наслаждайтесь процессом'
+    },
+    {
+      icon: 'Download',
+      title: 'Экспорт данных',
+      description: 'Скачивайте словарь в Excel для использования где угодно'
+    }
+  ];
 
-      <Card className="w-full max-w-md animate-scale-in shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-display text-2xl">
-            {isRegister ? 'Регистрация' : 'Вход'}
-          </CardTitle>
-          <CardDescription>
-            {isRegister ? 'Создайте аккаунт для начала изучения' : 'Войдите в свой аккаунт'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/10 to-background z-0"></div>
+        
+        <div className="container mx-auto px-4 py-20 relative z-10">
+          <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+            <div className="text-center md:text-left animate-fade-in">
+              <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
+                <span className="text-primary font-medium text-sm">Путь важнее цели ✨</span>
+              </div>
+              
+              <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground mb-6 leading-tight">
+                ShagToSpeak
+              </h1>
+              
+              <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
+                Изучайте английский шаг за шагом. Добавляйте слова, выполняйте упражнения и наслаждайтесь процессом.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                <Button 
+                  size="lg" 
+                  className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all"
+                  onClick={() => {
+                    setIsRegister(true);
+                    setShowAuthDialog(true);
+                  }}
+                >
+                  Начать бесплатно
+                  <Icon name="ArrowRight" size={20} className="ml-2" />
+                </Button>
+                
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="text-lg px-8 py-6"
+                  onClick={handleTestLogin}
+                >
+                  <Icon name="TestTube" size={20} className="mr-2" />
+                  Тестовый вход
+                </Button>
+              </div>
+
+              <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <Icon name="Check" size={18} className="text-green-500" />
+                  <span>Бесплатно</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="Check" size={18} className="text-green-500" />
+                  <span>Без карты</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Icon name="Check" size={18} className="text-green-500" />
+                  <span>50 слов</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="relative animate-scale-in hidden md:block">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl">
+                <img 
+                  src="https://cdn.poehali.dev/files/25cef0a6-e617-4ccc-9cf9-0f2eddc7fd8e.jpg" 
+                  alt="Learning Journey" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-accent/30">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center mb-16 animate-fade-in">
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
+              Почему ShagToSpeak?
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Мы создали инструмент, который делает изучение английского приятным и эффективным
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, idx) => (
+              <Card key={idx} className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2">
+                <CardHeader>
+                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                    <Icon name={feature.icon as any} size={28} className="text-primary" />
+                  </div>
+                  <CardTitle className="font-display text-xl mb-2">{feature.title}</CardTitle>
+                  <CardDescription className="text-base">{feature.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
+              Как это работает
+            </h2>
+            <p className="text-xl text-muted-foreground">
+              Три простых шага к изучению английского
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 z-0"></div>
+            
+            {[
+              {
+                step: '01',
+                title: 'Добавьте слова',
+                description: 'Вводите слова вручную или выбирайте готовые наборы по темам',
+                icon: 'Plus'
+              },
+              {
+                step: '02',
+                title: 'Выполняйте упражнения',
+                description: 'Разнообразные задания помогут запомнить слова навсегда',
+                icon: 'BookOpen'
+              },
+              {
+                step: '03',
+                title: 'Отслеживайте прогресс',
+                description: 'Смотрите статистику и наслаждайтесь своим ростом',
+                icon: 'LineChart'
+              }
+            ].map((step, idx) => (
+              <Card key={idx} className="relative z-10 text-center hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="mx-auto w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                    {step.step}
+                  </div>
+                  <CardTitle className="font-display text-2xl mb-3">{step.title}</CardTitle>
+                  <CardDescription className="text-base">{step.description}</CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
+        <div className="container mx-auto px-4 max-w-4xl text-center">
+          <div className="mb-8">
+            <img 
+              src="https://cdn.poehali.dev/files/ec589e15-511e-4278-962e-1b27cb545ef3.png" 
+              alt="Journey" 
+              className="w-full max-w-2xl mx-auto rounded-2xl shadow-xl"
+            />
+          </div>
+          
+          <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
+            Начните свой путь сегодня
+          </h2>
+          
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Бесплатный тариф включает 50 слов и 3 упражнения в день — более чем достаточно, чтобы начать
+          </p>
+          
+          <Button 
+            size="lg" 
+            className="text-xl px-12 py-8 shadow-xl hover:shadow-2xl transition-all"
+            onClick={() => {
+              setIsRegister(true);
+              setShowAuthDialog(true);
+            }}
+          >
+            Попробовать бесплатно
+            <Icon name="Rocket" size={24} className="ml-3" />
+          </Button>
+
+          <p className="mt-6 text-sm text-muted-foreground">
+            Уже есть аккаунт?{' '}
+            <button 
+              className="text-primary hover:underline font-medium"
+              onClick={() => {
+                setIsRegister(false);
+                setShowAuthDialog(true);
+              }}
+            >
+              Войти
+            </button>
+          </p>
+        </div>
+      </section>
+
+      {/* Auth Dialog */}
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">
+              {isRegister ? 'Регистрация' : 'Вход'}
+            </DialogTitle>
+            <DialogDescription>
+              {isRegister ? 'Создайте аккаунт для начала изучения' : 'Войдите в свой аккаунт'}
+            </DialogDescription>
+          </DialogHeader>
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div className="space-y-2">
@@ -121,7 +356,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             {isRegister && (
               <div className="space-y-3 pt-2">
                 <Label className="text-base">Выберите темы для изучения</Label>
-                <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto p-1">
+                <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-1">
                   {PREFERENCES.map((pref) => (
                     <div key={pref.id} className="flex items-center space-x-2">
                       <Checkbox 
@@ -131,7 +366,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                       />
                       <label
                         htmlFor={pref.id}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                        className="text-sm font-medium leading-none cursor-pointer"
                       >
                         {pref.label}
                       </label>
@@ -146,7 +381,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="text-center">
             <button
               type="button"
               onClick={() => setIsRegister(!isRegister)}
@@ -157,7 +392,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           </div>
 
           {isRegister && (
-            <div className="mt-6 p-4 bg-accent rounded-lg">
+            <div className="p-4 bg-accent rounded-lg">
               <div className="flex items-start gap-2">
                 <Icon name="Info" size={20} className="text-primary mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-muted-foreground">
@@ -166,8 +401,8 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
