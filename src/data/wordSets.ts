@@ -4,6 +4,7 @@ export interface WordSet {
   topic: string;
   description: string;
   words: string[];
+  wordCount?: number;
 }
 
 export const WORD_SETS: WordSet[] = [
@@ -12,6 +13,7 @@ export const WORD_SETS: WordSet[] = [
     title: '500 базовых слов',
     topic: 'essential_1000',
     description: 'Самые употребляемые слова для начинающих',
+    wordCount: 500,
     words: ['hello', 'goodbye', 'please', 'thank', 'yes', 'no', 'help', 'sorry', 'love', 'time', 'day', 'night', 'morning', 'evening', 'today', 'tomorrow', 'yesterday', 'week', 'month', 'year', 'water', 'food', 'house', 'home', 'family', 'friend', 'work', 'school', 'book', 'car', 'phone', 'money', 'person', 'man', 'woman', 'child', 'good', 'bad', 'big', 'small', 'new', 'old', 'young', 'happy', 'sad', 'hot', 'cold', 'fast', 'slow', 'easy']
   },
   {
@@ -19,6 +21,7 @@ export const WORD_SETS: WordSet[] = [
     title: '500 важных слов (продвинутый)',
     topic: 'essential_1000',
     description: 'Следующий уровень базовой лексики',
+    wordCount: 500,
     words: ['ability', 'achieve', 'active', 'address', 'advantage', 'afraid', 'agree', 'allow', 'almost', 'already', 'although', 'among', 'amount', 'ancient', 'angry', 'answer', 'appear', 'approach', 'area', 'argue', 'arrive', 'article', 'aspect', 'attack', 'attempt', 'attend', 'attention', 'attitude', 'attract', 'audience', 'available', 'average', 'avoid', 'aware', 'balance', 'base', 'basic', 'beautiful', 'become', 'before', 'begin', 'behavior', 'behind', 'believe', 'benefit', 'better', 'between', 'beyond', 'brain', 'branch']
   },
   {

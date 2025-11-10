@@ -69,7 +69,7 @@ const WordSetsDialog = ({ open, onOpenChange, user, onAddSet }: WordSetsDialogPr
                           <div className="flex items-center gap-2 mt-3">
                             <Badge variant="secondary">{getTopicLabel(set.topic)}</Badge>
                             <span className="text-xs text-muted-foreground">
-                              {set.words.length} слов
+                              {set.wordCount || set.words.length} слов
                             </span>
                           </div>
                         </div>
@@ -100,7 +100,7 @@ const WordSetsDialog = ({ open, onOpenChange, user, onAddSet }: WordSetsDialogPr
                           <div className="flex items-center gap-2 mt-3">
                             <Badge variant="outline">{getTopicLabel(set.topic)}</Badge>
                             <span className="text-xs text-muted-foreground">
-                              {set.words.length} слов
+                              {set.wordCount || set.words.length} слов
                             </span>
                           </div>
                         </div>

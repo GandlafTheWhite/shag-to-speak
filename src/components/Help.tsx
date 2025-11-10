@@ -57,6 +57,34 @@ const Help = ({ onNavigate }: HelpProps) => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+        <Card className="mb-8 bg-gradient-to-br from-primary/10 to-accent border-primary/30 shadow-lg">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                  <Icon name="MessageCircle" size={32} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-xl mb-1">
+                    Нужна помощь?
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Присоединяйтесь к нашему сообществу в Telegram
+                  </p>
+                </div>
+              </div>
+              <Button 
+                size="lg" 
+                className="w-full md:w-auto shadow-md hover:shadow-lg transition-all"
+                onClick={() => window.open('https://t.me/+Tr9zf7kjYjwwYzZi', '_blank')}
+              >
+                <Icon name="Send" size={20} className="mr-2" />
+                Открыть Telegram
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
             <Icon name="HelpCircle" size={40} className="text-primary" />
@@ -129,17 +157,21 @@ const Help = ({ onNavigate }: HelpProps) => {
           <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
-                <Icon name="MessageCircle" size={24} className="text-primary" />
-                <CardTitle className="font-display">Нужна помощь?</CardTitle>
+                <Icon name="Zap" size={24} className="text-primary" />
+                <CardTitle className="font-display">Обратная связь</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Если вы не нашли ответ на свой вопрос, свяжитесь с нами через чат поддержки.
+                Нашли ошибку или есть идея по улучшению? Мы будем рады вашим предложениям!
               </p>
-              <Button className="w-full" onClick={() => alert('Чат поддержки будет доступен в следующей версии')}>
+              <Button 
+                variant="outline" 
+                className="w-full" 
+                onClick={() => window.open('https://t.me/+Tr9zf7kjYjwwYzZi', '_blank')}
+              >
                 <Icon name="MessageSquare" size={18} className="mr-2" />
-                Открыть чат поддержки
+                Отправить отзыв
               </Button>
             </CardContent>
           </Card>

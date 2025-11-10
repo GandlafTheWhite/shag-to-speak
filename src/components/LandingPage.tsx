@@ -90,12 +90,12 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
         
         <div className="container mx-auto px-4 py-20 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <div className="text-center md:text-left animate-fade-in">
-              <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
+            <div className="text-center md:text-left opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
+              <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full backdrop-blur-sm">
                 <span className="text-primary font-medium text-sm">Путь важнее цели ✨</span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground mb-6 leading-tight">
+              <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
                 ShagToSpeak
               </h1>
               
@@ -106,7 +106,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Button 
                   size="lg" 
-                  className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all"
+                  className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 transform"
                   onClick={() => {
                     setIsRegister(true);
                     setShowAuthDialog(true);
@@ -120,27 +120,27 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
               </div>
 
               <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
                   <Icon name="Check" size={18} className="text-green-500" />
                   <span>Бесплатно</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
                   <Icon name="Check" size={18} className="text-green-500" />
                   <span>Без карты</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
                   <Icon name="Check" size={18} className="text-green-500" />
                   <span>50 слов</span>
                 </div>
               </div>
             </div>
 
-            <div className="relative animate-scale-in hidden md:block">
-              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center">
+            <div className="relative opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] hidden md:block">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center transition-transform hover:scale-105 duration-500">
                 <img 
                   src="https://cdn.poehali.dev/files/877b18d5-3656-4067-adbe-89a2510b72e3.png" 
                   alt="Balance and Harmony" 
-                  className="w-full h-full object-contain p-8"
+                  className="w-full h-full object-contain p-8 animate-[spin_20s_linear_infinite]"
                 />
               </div>
             </div>
@@ -151,7 +151,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       {/* Features Section */}
       <section className="py-20 bg-accent/30">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 animate-fade-in">
+          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
               Почему ShagToSpeak?
             </h2>
@@ -162,9 +162,13 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, idx) => (
-              <Card key={idx} className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-2">
+              <Card 
+                key={idx} 
+                className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-2 opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards] hover:border-primary/50 group"
+                style={{ animationDelay: `${0.2 + idx * 0.1}s` }}
+              >
                 <CardHeader>
-                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors group-hover:scale-110 duration-300">
                     <Icon name={feature.icon as any} size={28} className="text-primary" />
                   </div>
                   <CardTitle className="font-display text-xl mb-2">{feature.title}</CardTitle>
@@ -179,7 +183,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       {/* How It Works Section */}
       <section className="py-20">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
             <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
               Как это работает
             </h2>
@@ -189,7 +193,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 z-0"></div>
+            <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 z-0 opacity-0 animate-[fadeIn_1s_ease-out_0.5s_forwards]"></div>
             
             {[
               {
@@ -211,9 +215,13 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                 icon: 'LineChart'
               }
             ].map((step, idx) => (
-              <Card key={idx} className="relative z-10 text-center hover:shadow-lg transition-shadow">
+              <Card 
+                key={idx} 
+                className="relative z-10 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards] group hover:border-primary/50"
+                style={{ animationDelay: `${0.3 + idx * 0.15}s` }}
+              >
                 <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4">
+                  <div className="mx-auto w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                     {step.step}
                   </div>
                   <CardTitle className="font-display text-2xl mb-3">{step.title}</CardTitle>
@@ -227,7 +235,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
+        <div className="container mx-auto px-4 max-w-4xl text-center opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.2s]">
           <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
             Начните свой путь сегодня
           </h2>
@@ -238,7 +246,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           
           <Button 
             size="lg" 
-            className="text-xl px-12 py-8 shadow-xl hover:shadow-2xl transition-all"
+            className="text-xl px-12 py-8 shadow-xl hover:shadow-2xl transition-all hover:scale-110 transform animate-pulse hover:animate-none"
             onClick={() => {
               setIsRegister(true);
               setShowAuthDialog(true);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -68,13 +68,20 @@ const MOCK_WORDS: Word[] = [
 ];
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
-  const [words, setWords] = useState<Word[]>(MOCK_WORDS);
+  const [words, setWords] = useState<Word[]>(() => {
+    const saved = localStorage.getItem(`words_${user.id}`);
+    return saved ? JSON.parse(saved) : MOCK_WORDS;
+  });
   const [filterStatus, setFilterStatus] = useState<'all' | 'learning' | 'done'>('all');
   const [newWord, setNewWord] = useState('');
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSetsDialogOpen, setIsSetsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    localStorage.setItem(`words_${user.id}`, JSON.stringify(words));
+  }, [words, user.id]);
 
   const filteredWords = words.filter(w => 
     filterStatus === 'all' ? true : w.status === filterStatus
