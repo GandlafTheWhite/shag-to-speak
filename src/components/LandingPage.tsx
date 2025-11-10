@@ -166,11 +166,11 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </div>
 
             <div className="relative opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] hidden md:block">
-              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/20 to-accent/30 flex items-center justify-center transition-transform hover:scale-105 duration-500">
+              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-cyan-50 to-blue-100 flex items-center justify-center transition-transform hover:scale-105 duration-500">
                 <img 
-                  src="https://cdn.poehali.dev/files/877b18d5-3656-4067-adbe-89a2510b72e3.png" 
-                  alt="Balance and Harmony" 
-                  className="w-full h-full object-contain p-8 animate-[spin_20s_linear_infinite]"
+                  src="https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/760cf5be-4906-447f-9483-94b24e9aff93.jpg" 
+                  alt="Learning Journey Path" 
+                  className="w-full h-full object-cover rounded-3xl"
                 />
               </div>
             </div>

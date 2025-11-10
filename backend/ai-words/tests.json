@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Generate words by AI prompt",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "prompt": "travel and adventure",
+        "count": 5
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "words": "array",
+        "count": "number"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
