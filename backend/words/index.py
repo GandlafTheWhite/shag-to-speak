@@ -21,29 +21,56 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
     
     try:
         response = requests.post(
-            'https://gen-api.ru/api/v1/chat/completions',
-            headers={'Authorization': f'Bearer {api_key}'},
+            'https://api.gen-api.ru/api/v1/networks/o1-mini',
+            headers={
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            },
             json={
-                'model': 'o1-mini',
+                'is_sync': True,
                 'messages': [{
                     'role': 'user',
-                    'content': f'Переведи слово "{word}" на русский и дай 3 примера использования на английском. Формат ответа JSON: {{"translation": "перевод", "examples": ["пример1", "пример2", "пример3"]}}'
-                }]
+                    'content': f'Переведи английское слово "{word}" на русский язык и дай 3 коротких примера использования этого слова на английском языке. Ответь ТОЛЬКО в формате JSON без дополнительного текста: {{"translation": "краткий русский перевод", "examples": ["Example 1 with {word}", "Example 2 with {word}", "Example 3 with {word}"]}}'
+                }],
+                'model': 'o1-mini-2024-09-12',
+                'stream': False,
+                'temperature': 1
             },
-            timeout=15
+            timeout=30
         )
         
         if response.status_code == 200:
             data = response.json()
-            content = data['choices'][0]['message']['content']
-            result = json.loads(content)
-            return result
+            
+            if 'output' in data and 'choices' in data['output']:
+                content = data['output']['choices'][0]['message']['content']
+                content_clean = content.strip()
+                
+                if content_clean.startswith('```json'):
+                    content_clean = content_clean[7:]
+                if content_clean.startswith('```'):
+                    content_clean = content_clean[3:]
+                if content_clean.endswith('```'):
+                    content_clean = content_clean[:-3]
+                content_clean = content_clean.strip()
+                
+                result = json.loads(content_clean)
+                return {
+                    'translation': result.get('translation', 'перевод'),
+                    'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
+                }
+            else:
+                return {
+                    'translation': 'перевод генерируется...',
+                    'examples': ['Примеры будут добавлены']
+                }
         else:
             return {
                 'translation': 'перевод генерируется...',
                 'examples': ['Примеры будут добавлены']
             }
-    except:
+    except Exception as e:
         return {
             'translation': 'перевод генерируется...',
             'examples': ['Примеры будут добавлены']

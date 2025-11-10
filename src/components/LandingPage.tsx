@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { LEARNING_TOPICS } from '@/data/topics';
+import { apiClient } from '@/utils/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
@@ -21,22 +23,50 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    const mockUser: User = {
-      id: Math.floor(Math.random() * 10000),
-      name: name || 'Пользователь',
-      email: email,
-      status: 'free',
-      preferences: selectedPreferences,
-      word_count: 11,
-      exercises_remaining: 3,
-      daily_exercises_count: 0
-    };
-    
-    onLogin(mockUser);
+    try {
+      if (isRegister) {
+        const { user, token } = await apiClient.register(
+          email,
+          password,
+          name || 'Пользователь',
+          phone,
+          selectedPreferences
+        );
+        
+        localStorage.setItem('auth_token', token);
+        onLogin(user);
+        
+        toast({
+          title: 'Регистрация успешна!',
+          description: `Добро пожаловать, ${user.name}!`
+        });
+      } else {
+        const { user, token } = await apiClient.login(email, password);
+        
+        localStorage.setItem('auth_token', token);
+        onLogin(user);
+        
+        toast({
+          title: 'Вход выполнен!',
+          description: `С возвращением, ${user.name}!`
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Произошла ошибка',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
 
@@ -363,8 +393,8 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
               </>
             )}
 
-            <Button type="submit" className="w-full" size="lg">
-              {isRegister ? 'Зарегистрироваться' : 'Войти'}
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? 'Загрузка...' : (isRegister ? 'Зарегистрироваться' : 'Войти')}
             </Button>
           </form>
 

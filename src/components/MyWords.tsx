@@ -12,6 +12,7 @@ import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 import WordSetsDialog from './WordSetsDialog';
 import { WORD_SETS } from '@/data/wordSets';
+import { apiClient, type Word as ApiWord } from '@/utils/api';
 
 interface MyWordsProps {
   user: User;
@@ -68,64 +69,100 @@ const MOCK_WORDS: Word[] = [
 ];
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
-  const [words, setWords] = useState<Word[]>(() => {
-    const saved = localStorage.getItem(`words_${user.id}`);
-    return saved ? JSON.parse(saved) : MOCK_WORDS;
-  });
+  const [words, setWords] = useState<Word[]>([]);
   const [filterStatus, setFilterStatus] = useState<'all' | 'learning' | 'done'>('all');
   const [newWord, setNewWord] = useState('');
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSetsDialogOpen, setIsSetsDialogOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    localStorage.setItem(`words_${user.id}`, JSON.stringify(words));
-  }, [words, user.id]);
+    loadWords();
+  }, []);
+
+  const loadWords = async () => {
+    try {
+      setIsLoading(true);
+      const apiWords = await apiClient.getWords();
+      setWords(apiWords.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count
+      })));
+      updateUser({ word_count: apiWords.length });
+    } catch (error) {
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить слова',
+        variant: 'destructive'
+      });
+      setWords(MOCK_WORDS);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredWords = words.filter(w => 
     filterStatus === 'all' ? true : w.status === filterStatus
   );
 
-  const handleAddWord = () => {
+  const handleAddWord = async () => {
     if (!newWord.trim()) return;
 
-    const wordLimit = user.status === 'free' ? 50 : 999;
-    if (words.length >= wordLimit) {
+    const wordsToAdd = newWord.split(',').map(w => w.trim()).filter(w => w);
+
+    try {
+      setIsLoading(true);
+      const result = await apiClient.addWords(wordsToAdd);
+      
+      setWords([...result.words.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count
+      })), ...words]);
+      
+      updateUser({ word_count: words.length + result.count });
+      setNewWord('');
+      setIsAddDialogOpen(false);
+      
       toast({
-        title: 'Достигнут лимит слов',
-        description: `Доступно максимум ${wordLimit} слов. Обновите подписку до Premium для снятия лимитов.`,
+        title: 'Слова добавлены!',
+        description: `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось добавить слова',
         variant: 'destructive'
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    const mockNewWord: Word = {
-      id: Date.now(),
-      english_word: newWord.toLowerCase(),
-      russian_translation: 'перевод будет добавлен',
-      examples: ['Пример будет сгенерирован'],
-      status: 'learning',
-      recall_count: 0
-    };
-
-    setWords([mockNewWord, ...words]);
-    updateUser({ word_count: words.length + 1 });
-    setNewWord('');
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: 'Слово добавлено!',
-      description: `"${mockNewWord.english_word}" добавлено в словарь`
-    });
   };
 
-  const handleStatusChange = (wordId: number, newStatus: 'learning' | 'done') => {
-    setWords(words.map(w => w.id === wordId ? { ...w, status: newStatus } : w));
-    toast({
-      title: 'Статус обновлен',
-      description: `Слово переведено в "${newStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`
-    });
+  const handleStatusChange = async (wordId: number, newStatus: 'learning' | 'done') => {
+    try {
+      await apiClient.updateWordStatus(wordId, newStatus);
+      setWords(words.map(w => w.id === wordId ? { ...w, status: newStatus } : w));
+      toast({
+        title: 'Статус обновлен',
+        description: `Слово переведено в "${newStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить статус',
+        variant: 'destructive'
+      });
+    }
   };
 
   const handleDelete = (wordId: number) => {
@@ -138,36 +175,38 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     });
   };
 
-  const handleAddWordSet = (setId: string) => {
+  const handleAddWordSet = async (setId: string) => {
     const set = WORD_SETS.find(s => s.id === setId);
     if (!set) return;
 
-    const wordLimit = user.status === 'free' ? 50 : 999;
-    if (words.length + set.words.length > wordLimit) {
+    try {
+      setIsLoading(true);
+      const result = await apiClient.addWords(set.words);
+      
+      setWords([...result.words.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count
+      })), ...words]);
+      
+      updateUser({ word_count: words.length + result.count });
+      
       toast({
-        title: 'Превышен лимит слов',
-        description: `Невозможно добавить набор. Доступно максимум ${wordLimit} слов.`,
+        title: 'Набор добавлен!',
+        description: `Добавлено ${result.count} слов из набора "${set.title}"`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось добавить набор',
         variant: 'destructive'
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    const newWords: Word[] = set.words.map((word, idx) => ({
-      id: Date.now() + idx,
-      english_word: word,
-      russian_translation: 'перевод генерируется...',
-      examples: ['Примеры будут добавлены'],
-      status: 'learning' as const,
-      recall_count: 0
-    }));
-
-    setWords([...newWords, ...words]);
-    updateUser({ word_count: words.length + newWords.length });
-    
-    toast({
-      title: 'Набор добавлен!',
-      description: `Добавлено ${set.words.length} слов из набора "${set.title}"`
-    });
   };
 
   return (
