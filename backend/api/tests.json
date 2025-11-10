@@ -1,0 +1,36 @@
+{
+  "tests": [
+    {
+      "name": "Test user registration",
+      "method": "POST",
+      "path": "/?action=register",
+      "body": {
+        "email": "test@example.com",
+        "password": "test123",
+        "name": "Test User",
+        "preferences": ["travel", "business"]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user_id": "number",
+        "message": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test get user info",
+      "method": "GET",
+      "path": "/?action=user-info",
+      "headers": {
+        "x-user-id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "email": "string",
+        "name": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
