@@ -11,7 +11,6 @@ import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 import WordSetsDialog from './WordSetsDialog';
-import { WORD_SETS } from '@/data/wordSets';
 import { apiClient, type Word as ApiWord } from '@/utils/api';
 
 interface MyWordsProps {
@@ -156,14 +155,25 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   };
 
   const handleAddWordSet = async (setId: string) => {
-    const set = WORD_SETS.find(s => s.id === setId);
-    if (!set) return;
-
     try {
       setIsLoading(true);
-      const result = await apiClient.addWords(set.words);
+      const response = await fetch(`https://functions.poehali.dev/a50df754-52e7-423a-a83b-fe50339a4d73`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id.toString()
+        },
+        body: JSON.stringify({ set_id: setId })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add word set');
+      }
+
+      const result = await response.json();
       
-      setWords([...result.words.map(w => ({
+      setWords([...result.words.map((w: any) => ({
         id: w.id,
         english_word: w.english_word,
         russian_translation: w.russian_translation,
@@ -174,9 +184,13 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       
       updateUser({ word_count: words.length + result.count });
       
+      const description = result.message 
+        ? `Добавлено ${result.count} слов. ${result.message}`
+        : `Добавлено ${result.count} слов из набора`;
+      
       toast({
         title: 'Набор добавлен!',
-        description: `Добавлено ${result.count} слов из набора "${set.title}"`
+        description
       });
     } catch (error) {
       toast({
