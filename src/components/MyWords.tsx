@@ -29,44 +29,7 @@ interface Word {
   recall_count: number;
 }
 
-const MOCK_WORDS: Word[] = [
-  {
-    id: 1,
-    english_word: 'serendipity',
-    russian_translation: 'счастливая случайность',
-    examples: [
-      'It was pure serendipity that we met at the coffee shop.',
-      'The discovery was a moment of serendipity.',
-      'Serendipity played a role in their success.'
-    ],
-    status: 'learning',
-    recall_count: 3
-  },
-  {
-    id: 2,
-    english_word: 'embrace',
-    russian_translation: 'принимать, обнимать',
-    examples: [
-      'We should embrace new challenges.',
-      'She embraced her friend warmly.',
-      'The company embraced digital transformation.'
-    ],
-    status: 'learning',
-    recall_count: 5
-  },
-  {
-    id: 3,
-    english_word: 'resilient',
-    russian_translation: 'стойкий, устойчивый',
-    examples: [
-      'She proved to be resilient in difficult times.',
-      'The city is resilient after the storm.',
-      'Building resilient systems is crucial.'
-    ],
-    status: 'done',
-    recall_count: 10
-  }
-];
+
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [words, setWords] = useState<Word[]>([]);
@@ -88,7 +51,11 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     try {
       setIsLoading(true);
       const apiWords = await apiClient.getWords();
-      setWords(apiWords.map(w => ({
+      const validWords = apiWords.filter(w => 
+        w.russian_translation !== 'перевод генерируется...' &&
+        !(w.examples.length === 1 && w.examples[0] === 'Примеры будут добавлены')
+      );
+      setWords(validWords.map(w => ({
         id: w.id,
         english_word: w.english_word,
         russian_translation: w.russian_translation,
@@ -96,14 +63,14 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         status: w.status,
         recall_count: w.recall_count
       })));
-      updateUser({ word_count: apiWords.length });
+      updateUser({ word_count: validWords.length });
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
         description: 'Не удалось загрузить слова',
         variant: 'destructive'
       });
-      setWords(MOCK_WORDS);
+      setWords([]);
     } finally {
       setIsLoading(false);
     }

@@ -112,9 +112,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """SELECT id, english_word, russian_translation, examples, status, recall_count, 
                           last_recall_date, created_at
                    FROM t_p7147437_shag_to_speak.words 
-                   WHERE user_id = %s 
-                   AND russian_translation != 'перевод генерируется...'
-                   AND NOT (examples = ARRAY['Примеры будут добавлены'])
+                   WHERE user_id = %s
                    ORDER BY created_at DESC""",
                 (user_id,)
             )
@@ -181,6 +179,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             added_words = []
+            failed_words = []
+            
             for word_text in words_input:
                 word_text = word_text.strip().lower()
                 if not word_text:
@@ -189,12 +189,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 gen_data = generate_translation_and_examples(word_text)
                 
                 if gen_data['translation'] == 'перевод генерируется...' or gen_data['examples'] == ['Примеры будут добавлены']:
-                    return {
-                        'statusCode': 500,
-                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                        'body': json.dumps({'error': 'Не удалось получить перевод и примеры. Попробуйте позже.'}),
-                        'isBase64Encoded': False
-                    }
+                    failed_words.append(word_text)
+                    continue
                 
                 cursor.execute(
                     """INSERT INTO t_p7147437_shag_to_speak.words 
@@ -212,6 +208,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': new_word['status'],
                     'recall_count': new_word['recall_count']
                 })
+            
+            if not added_words and failed_words:
+                return {
+                    'statusCode': 500,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'Не удалось получить перевод и примеры. Попробуйте позже.'}),
+                    'isBase64Encoded': False
+                }
             
             conn.commit()
             
