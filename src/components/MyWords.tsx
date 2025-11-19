@@ -36,7 +36,9 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
   const generateWordDetailsInBackground = async (wordId: number) => {
     try {
+      console.log(`Starting background generation for word ${wordId}`);
       const updatedWord = await apiClient.generateWordDetails(wordId);
+      console.log(`Generated word ${wordId}:`, updatedWord);
       
       setWords(prevWords => prevWords.map(w => 
         w.id === wordId ? {
@@ -44,6 +46,11 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           is_generating: false
         } : w
       ));
+      
+      toast({
+        title: 'Слово обновлено!',
+        description: `"${updatedWord.english_word}" - перевод готов`
+      });
     } catch (error) {
       console.error('Failed to generate word details:', error);
       setWords(prevWords => prevWords.map(w => 
@@ -54,13 +61,21 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           is_generating: false
         } : w
       ));
+      
+      toast({
+        title: 'Ошибка генерации',
+        description: error instanceof Error ? error.message : 'Не удалось сгенерировать перевод',
+        variant: 'destructive'
+      });
     }
   };
 
   const loadWords = async () => {
     try {
       setIsLoading(true);
+      console.log('Loading words...');
       const apiWords = await apiClient.getWords();
+      console.log(`Loaded ${apiWords.length} words from API`);
       
       const wordsToDisplay = apiWords.map(w => {
         const isGenerating = w.russian_translation === '...';
@@ -76,15 +91,20 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         };
       });
       
+      const generatingWords = wordsToDisplay.filter(w => w.is_generating);
+      console.log(`Found ${generatingWords.length} words needing generation:`, generatingWords.map(w => w.english_word));
+      
       setWords(wordsToDisplay);
       updateUser({ word_count: wordsToDisplay.length });
       
       wordsToDisplay.forEach(word => {
         if (word.is_generating) {
+          console.log(`Triggering generation for word ${word.id}: ${word.english_word}`);
           generateWordDetailsInBackground(word.id);
         }
       });
     } catch (error) {
+      console.error('Error loading words:', error);
       toast({
         title: 'Ошибка загрузки',
         description: 'Не удалось загрузить слова',

@@ -72,8 +72,8 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
     api_key = os.environ.get('GENAPI_KEY', '')
     if not api_key:
         return {
-            'translation': 'перевод генерируется...',
-            'examples': ['Примеры будут добавлены'],
+            'translation': '...',
+            'examples': ['Генерация примеров...'],
             'category': 'uncategorized'
         }
     
@@ -120,31 +120,30 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                 print(f'Cleaned content for "{word}": {content_clean}')
                 
                 result = json.loads(content_clean)
-                category = categorize_word(word)
                 return {
                     'translation': result.get('translation', 'перевод'),
                     'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
-                    'category': category
+                    'category': 'uncategorized'
                 }
             else:
                 print(f'GenAPI response missing expected structure for "{word}"')
                 return {
-                    'translation': 'перевод генерируется...',
-                    'examples': ['Примеры будут добавлены'],
+                    'translation': '...',
+                    'examples': ['Генерация примеров...'],
                     'category': 'uncategorized'
                 }
         else:
             print(f'GenAPI returned status {response.status_code} for "{word}"')
             return {
-                'translation': 'перевод генерируется...',
-                'examples': ['Примеры будут добавлены'],
+                'translation': '...',
+                'examples': ['Генерация примеров...'],
                 'category': 'uncategorized'
             }
     except Exception as e:
         print(f'Error generating translation for "{word}": {str(e)}')
         return {
-            'translation': 'перевод генерируется...',
-            'examples': ['Примеры будут добавлены'],
+            'translation': '...',
+            'examples': ['Генерация примеров...'],
             'category': 'uncategorized'
         }
 

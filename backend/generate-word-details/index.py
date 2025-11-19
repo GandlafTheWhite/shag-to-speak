@@ -117,11 +117,10 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                 content_clean = content_clean.strip()
                 
                 result = json.loads(content_clean)
-                category = categorize_word(word)
                 return {
                     'translation': result.get('translation', '...'),
                     'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
-                    'category': category
+                    'category': 'uncategorized'
                 }
         
         return {
@@ -181,6 +180,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
+        print(f'Generating details for word_id={word_id}, user_id={user_id}')
+        
         cursor.execute(
             """SELECT id, english_word, user_id 
                FROM t_p7147437_shag_to_speak.words 
@@ -190,6 +191,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         word = cursor.fetchone()
         
         if not word:
+            print(f'Word not found: word_id={word_id}, user_id={user_id}')
             return {
                 'statusCode': 404,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -197,7 +199,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
+        print(f'Found word: {word["english_word"]}')
         gen_data = generate_translation_and_examples(word['english_word'])
+        print(f'Generated data: translation={gen_data["translation"]}, category={gen_data["category"]}')
         
         cursor.execute(
             """UPDATE t_p7147437_shag_to_speak.words 
@@ -229,6 +233,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     except Exception as e:
         conn.rollback()
+        print(f'Error generating word details: {str(e)}')
+        import traceback
+        traceback.print_exc()
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
