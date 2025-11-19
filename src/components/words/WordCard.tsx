@@ -22,16 +22,25 @@ interface WordCardProps {
 }
 
 const WordCard = ({ word, onStatusChange, onDelete, onSelectWord }: WordCardProps) => {
+  const isGenerating = word.is_generating || word.russian_translation === '...';
+  
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="font-display text-xl mb-2">
+            <CardTitle className="font-display text-xl mb-2 flex items-center gap-2">
               {word.english_word}
+              {isGenerating && (
+                <Icon name="Loader2" size={18} className="animate-spin text-primary" />
+              )}
             </CardTitle>
             <CardDescription className="text-base">
-              {word.russian_translation}
+              {isGenerating ? (
+                <span className="text-muted-foreground italic">Генерируем перевод...</span>
+              ) : (
+                word.russian_translation
+              )}
             </CardDescription>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -50,7 +59,7 @@ const WordCard = ({ word, onStatusChange, onDelete, onSelectWord }: WordCardProp
             <p className="text-sm font-medium text-muted-foreground mb-2">Примеры:</p>
             <ul className="space-y-1">
               {word.examples.map((ex, idx) => (
-                <li key={idx} className="text-sm text-foreground pl-4 relative before:content-['•'] before:absolute before:left-0">
+                <li key={idx} className={`text-sm pl-4 relative before:content-['•'] before:absolute before:left-0 ${isGenerating ? 'text-muted-foreground italic' : 'text-foreground'}`}>
                   {ex}
                 </li>
               ))}

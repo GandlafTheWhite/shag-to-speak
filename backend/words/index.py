@@ -254,7 +254,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             added_words = []
-            failed_words = []
             duplicate_words = []
             
             for word_text in words_input:
@@ -272,18 +271,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     duplicate_words.append(word_text)
                     continue
                 
-                gen_data = generate_translation_and_examples(word_text)
-                
-                if gen_data['translation'] == 'перевод генерируется...' or gen_data['examples'] == ['Примеры будут добавлены']:
-                    failed_words.append(word_text)
-                    continue
-                
                 cursor.execute(
                     """INSERT INTO t_p7147437_shag_to_speak.words 
                        (user_id, english_word, russian_translation, examples, status, recall_count, category)
                        VALUES (%s, %s, %s, %s, 'learning', 0, %s)
                        RETURNING id, english_word, russian_translation, examples, status, recall_count, category""",
-                    (user_id, word_text, gen_data['translation'], gen_data['examples'], gen_data.get('category', 'uncategorized'))
+                    (user_id, word_text, '...', ['Генерация примеров...'], 'uncategorized')
                 )
                 new_word = cursor.fetchone()
                 added_words.append({
@@ -293,7 +286,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'examples': new_word['examples'],
                     'status': new_word['status'],
                     'recall_count': new_word['recall_count'],
-                    'category': new_word.get('category', 'uncategorized')
+                    'category': new_word.get('category', 'uncategorized'),
+                    'is_generating': True
                 })
             
             if duplicate_words and not added_words:
@@ -302,14 +296,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'statusCode': 400,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({'error': f'Эти слова уже есть в твоём словаре :) — {words_list}'}),
-                    'isBase64Encoded': False
-                }
-            
-            if not added_words and failed_words:
-                return {
-                    'statusCode': 500,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': 'Не удалось получить перевод и примеры. Попробуйте позже.'}),
                     'isBase64Encoded': False
                 }
             

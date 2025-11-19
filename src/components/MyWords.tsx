@@ -81,6 +81,29 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     wordsByCategory[cat.id] && wordsByCategory[cat.id].length > 0
   );
 
+  const generateWordDetailsInBackground = async (wordId: number) => {
+    try {
+      const updatedWord = await apiClient.generateWordDetails(wordId);
+      
+      setWords(prevWords => prevWords.map(w => 
+        w.id === wordId ? {
+          ...updatedWord,
+          is_generating: false
+        } : w
+      ));
+    } catch (error) {
+      console.error('Failed to generate word details:', error);
+      setWords(prevWords => prevWords.map(w => 
+        w.id === wordId ? {
+          ...w,
+          russian_translation: 'Ошибка генерации',
+          examples: ['Попробуйте удалить и добавить слово заново'],
+          is_generating: false
+        } : w
+      ));
+    }
+  };
+
   const handleAddWord = async () => {
     if (!newWord.trim()) return;
 
@@ -90,19 +113,28 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setIsLoading(true);
       const result = await apiClient.addWords(wordsToAdd);
       
-      setWords([...result.words.map(w => ({
+      const newWords = result.words.map(w => ({
         id: w.id,
         english_word: w.english_word,
         russian_translation: w.russian_translation,
         examples: w.examples,
         status: w.status,
         recall_count: w.recall_count,
-        category: w.category || 'uncategorized'
-      })), ...words]);
+        category: w.category || 'uncategorized',
+        is_generating: w.is_generating || false
+      }));
+      
+      setWords([...newWords, ...words]);
       
       updateUser({ word_count: words.length + result.count });
       setNewWord('');
       setIsAddDialogOpen(false);
+      
+      newWords.forEach(word => {
+        if (word.is_generating) {
+          generateWordDetailsInBackground(word.id);
+        }
+      });
       
       if (result.count > 0) {
         const description = result.message 
