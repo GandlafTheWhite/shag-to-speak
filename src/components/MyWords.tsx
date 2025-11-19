@@ -34,24 +34,56 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     loadWords();
   }, []);
 
+  const generateWordDetailsInBackground = async (wordId: number) => {
+    try {
+      const updatedWord = await apiClient.generateWordDetails(wordId);
+      
+      setWords(prevWords => prevWords.map(w => 
+        w.id === wordId ? {
+          ...updatedWord,
+          is_generating: false
+        } : w
+      ));
+    } catch (error) {
+      console.error('Failed to generate word details:', error);
+      setWords(prevWords => prevWords.map(w => 
+        w.id === wordId ? {
+          ...w,
+          russian_translation: 'Ошибка генерации',
+          examples: ['Попробуйте удалить и добавить слово заново'],
+          is_generating: false
+        } : w
+      ));
+    }
+  };
+
   const loadWords = async () => {
     try {
       setIsLoading(true);
       const apiWords = await apiClient.getWords();
-      const validWords = apiWords.filter(w => 
-        w.russian_translation !== 'перевод генерируется...' &&
-        !(w.examples.length === 1 && w.examples[0] === 'Примеры будут добавлены')
-      );
-      setWords(validWords.map(w => ({
-        id: w.id,
-        english_word: w.english_word,
-        russian_translation: w.russian_translation,
-        examples: w.examples,
-        status: w.status,
-        recall_count: w.recall_count,
-        category: w.category || 'uncategorized'
-      })));
-      updateUser({ word_count: validWords.length });
+      
+      const wordsToDisplay = apiWords.map(w => {
+        const isGenerating = w.russian_translation === '...';
+        return {
+          id: w.id,
+          english_word: w.english_word,
+          russian_translation: w.russian_translation,
+          examples: w.examples,
+          status: w.status,
+          recall_count: w.recall_count,
+          category: w.category || 'uncategorized',
+          is_generating: isGenerating
+        };
+      });
+      
+      setWords(wordsToDisplay);
+      updateUser({ word_count: wordsToDisplay.length });
+      
+      wordsToDisplay.forEach(word => {
+        if (word.is_generating) {
+          generateWordDetailsInBackground(word.id);
+        }
+      });
     } catch (error) {
       toast({
         title: 'Ошибка загрузки',
@@ -81,29 +113,6 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     wordsByCategory[cat.id] && wordsByCategory[cat.id].length > 0
   );
 
-  const generateWordDetailsInBackground = async (wordId: number) => {
-    try {
-      const updatedWord = await apiClient.generateWordDetails(wordId);
-      
-      setWords(prevWords => prevWords.map(w => 
-        w.id === wordId ? {
-          ...updatedWord,
-          is_generating: false
-        } : w
-      ));
-    } catch (error) {
-      console.error('Failed to generate word details:', error);
-      setWords(prevWords => prevWords.map(w => 
-        w.id === wordId ? {
-          ...w,
-          russian_translation: 'Ошибка генерации',
-          examples: ['Попробуйте удалить и добавить слово заново'],
-          is_generating: false
-        } : w
-      ));
-    }
-  };
-
   const handleAddWord = async () => {
     if (!newWord.trim()) return;
 
@@ -113,16 +122,19 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setIsLoading(true);
       const result = await apiClient.addWords(wordsToAdd);
       
-      const newWords = result.words.map(w => ({
-        id: w.id,
-        english_word: w.english_word,
-        russian_translation: w.russian_translation,
-        examples: w.examples,
-        status: w.status,
-        recall_count: w.recall_count,
-        category: w.category || 'uncategorized',
-        is_generating: w.is_generating || false
-      }));
+      const newWords = result.words.map(w => {
+        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
+        return {
+          id: w.id,
+          english_word: w.english_word,
+          russian_translation: w.russian_translation,
+          examples: w.examples,
+          status: w.status,
+          recall_count: w.recall_count,
+          category: w.category || 'uncategorized',
+          is_generating: isGenerating
+        };
+      });
       
       setWords([...newWords, ...words]);
       
@@ -208,15 +220,27 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       const result = await response.json();
       
-      setWords([...result.words.map((w: any) => ({
-        id: w.id,
-        english_word: w.english_word,
-        russian_translation: w.russian_translation,
-        examples: w.examples,
-        status: w.status,
-        recall_count: w.recall_count,
-        category: w.category || 'uncategorized'
-      })), ...words]);
+      const newWords = result.words.map((w: any) => {
+        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
+        return {
+          id: w.id,
+          english_word: w.english_word,
+          russian_translation: w.russian_translation,
+          examples: w.examples,
+          status: w.status,
+          recall_count: w.recall_count,
+          category: w.category || 'uncategorized',
+          is_generating: isGenerating
+        };
+      });
+      
+      setWords([...newWords, ...words]);
+      
+      newWords.forEach(word => {
+        if (word.is_generating) {
+          generateWordDetailsInBackground(word.id);
+        }
+      });
       
       updateUser({ word_count: words.length + result.count });
       
@@ -262,15 +286,27 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       const result = await response.json();
       
-      setWords([...result.words.map((w: ApiWord) => ({
-        id: w.id,
-        english_word: w.english_word,
-        russian_translation: w.russian_translation,
-        examples: w.examples,
-        status: w.status,
-        recall_count: w.recall_count,
-        category: w.category || 'uncategorized'
-      })), ...words]);
+      const newWords = result.words.map((w: ApiWord) => {
+        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
+        return {
+          id: w.id,
+          english_word: w.english_word,
+          russian_translation: w.russian_translation,
+          examples: w.examples,
+          status: w.status,
+          recall_count: w.recall_count,
+          category: w.category || 'uncategorized',
+          is_generating: isGenerating
+        };
+      });
+      
+      setWords([...newWords, ...words]);
+      
+      newWords.forEach(word => {
+        if (word.is_generating) {
+          generateWordDetailsInBackground(word.id);
+        }
+      });
       
       updateUser({ word_count: words.length + result.count });
       setAiPrompt('');
