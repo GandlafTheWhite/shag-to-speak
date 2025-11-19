@@ -24,7 +24,6 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
             'https://api.gen-api.ru/api/v1/networks/o1-mini',
             headers={
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
                 'Authorization': f'Bearer {api_key}'
             },
             json={
@@ -34,10 +33,9 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                     'content': f'Переведи английское слово "{word}" на русский язык и дай 3 коротких примера использования этого слова на английском языке. Ответь ТОЛЬКО в формате JSON без дополнительного текста: {{"translation": "краткий русский перевод", "examples": ["Example 1 with {word}", "Example 2 with {word}", "Example 3 with {word}"]}}'
                 }],
                 'model': 'o1-mini-2024-09-12',
-                'stream': False,
-                'temperature': 1
+                'stream': False
             },
-            timeout=30
+            timeout=45
         )
         
         if response.status_code == 200:
@@ -70,7 +68,7 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                 'translation': 'перевод генерируется...',
                 'examples': ['Примеры будут добавлены']
             }
-    except Exception as e:
+    except Exception:
         return {
             'translation': 'перевод генерируется...',
             'examples': ['Примеры будут добавлены']
@@ -114,7 +112,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """SELECT id, english_word, russian_translation, examples, status, recall_count, 
                           last_recall_date, created_at
                    FROM t_p7147437_shag_to_speak.words 
-                   WHERE user_id = %s
+                   WHERE user_id = %s 
+                   AND russian_translation != 'перевод генерируется...'
+                   AND NOT (examples = ARRAY['Примеры будут добавлены'])
                    ORDER BY created_at DESC""",
                 (user_id,)
             )
@@ -187,6 +187,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     continue
                 
                 gen_data = generate_translation_and_examples(word_text)
+                
+                if gen_data['translation'] == 'перевод генерируется...' or gen_data['examples'] == ['Примеры будут добавлены']:
+                    return {
+                        'statusCode': 500,
+                        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                        'body': json.dumps({'error': 'Не удалось получить перевод и примеры. Попробуйте позже.'}),
+                        'isBase64Encoded': False
+                    }
                 
                 cursor.execute(
                     """INSERT INTO t_p7147437_shag_to_speak.words 

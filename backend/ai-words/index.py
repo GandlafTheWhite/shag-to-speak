@@ -21,7 +21,6 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
             'https://api.gen-api.ru/api/v1/networks/o1-mini',
             headers={
                 'Content-Type': 'application/json',
-                'Accept': 'application/json',
                 'Authorization': f'Bearer {api_key}'
             },
             json={
@@ -31,10 +30,9 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
                     'content': f'На основе запроса пользователя: "{prompt}" - подбери {count} английских слов которые соответствуют этой теме. Для каждого слова дай русский перевод и 3 коротких примера использования на английском. Ответь ТОЛЬКО в формате JSON массива без дополнительного текста: [{{"word": "english_word", "translation": "русский перевод", "examples": ["Example 1", "Example 2", "Example 3"]}}]'
                 }],
                 'model': 'o1-mini-2024-09-12',
-                'stream': False,
-                'temperature': 1
+                'stream': False
             },
-            timeout=45
+            timeout=60
         )
         
         if response.status_code == 200:
@@ -58,7 +56,7 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
                 return []
         else:
             return []
-    except Exception as e:
+    except Exception:
         return []
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -154,30 +152,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         added_words = []
+        
+        if not generated_words:
+            conn.commit()
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Не удалось сгенерировать слова. Проверьте GENAPI_KEY.'}),
+                'isBase64Encoded': False
+            }
+        
         for word_data in generated_words:
-            word_text = word_data.get('word', '').strip().lower()
-            translation = word_data.get('translation', 'перевод')
-            examples = word_data.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
-            
-            if not word_text:
+            try:
+                word_text = word_data.get('word', '').strip().lower()
+                translation = word_data.get('translation', 'перевод')
+                examples = word_data.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
+                
+                if not word_text:
+                    continue
+                
+                if not translation or translation == 'перевод' or not examples or len(examples) < 3:
+                    continue
+                
+                cursor.execute(
+                    """INSERT INTO t_p7147437_shag_to_speak.words 
+                       (user_id, english_word, russian_translation, examples, status, recall_count)
+                       VALUES (%s, %s, %s, %s, 'learning', 0)
+                       RETURNING id, english_word, russian_translation, examples, status, recall_count""",
+                    (user_id, word_text, translation, examples)
+                )
+                new_word = cursor.fetchone()
+                added_words.append({
+                    'id': new_word['id'],
+                    'english_word': new_word['english_word'],
+                    'russian_translation': new_word['russian_translation'],
+                    'examples': new_word['examples'],
+                    'status': new_word['status'],
+                    'recall_count': new_word['recall_count']
+                })
+            except Exception:
                 continue
-            
-            cursor.execute(
-                """INSERT INTO t_p7147437_shag_to_speak.words 
-                   (user_id, english_word, russian_translation, examples, status, recall_count)
-                   VALUES (%s, %s, %s, %s, 'learning', 0)
-                   RETURNING id, english_word, russian_translation, examples, status, recall_count""",
-                (user_id, word_text, translation, examples)
-            )
-            new_word = cursor.fetchone()
-            added_words.append({
-                'id': new_word['id'],
-                'english_word': new_word['english_word'],
-                'russian_translation': new_word['russian_translation'],
-                'examples': new_word['examples'],
-                'status': new_word['status'],
-                'recall_count': new_word['recall_count']
-            })
+        
+        if not added_words:
+            conn.commit()
+            return {
+                'statusCode': 500,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Не удалось добавить слова. Попробуйте позже.'}),
+                'isBase64Encoded': False
+            }
         
         conn.commit()
         
