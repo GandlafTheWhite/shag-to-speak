@@ -1,36 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
-import WordSetsDialog from './WordSetsDialog';
 import { apiClient, type Word as ApiWord } from '@/utils/api';
-import { CATEGORIES, getCategoryTitle, getCategoryIcon } from '@/data/categories';
+import { CATEGORIES } from '@/data/categories';
+import WordsListView from './words/WordsListView';
+import WordsCategoriesView from './words/WordsCategoriesView';
+import { type Word } from './words/WordCard';
 
 interface MyWordsProps {
   user: User;
   onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help') => void;
   updateUser: (data: Partial<User>) => void;
 }
-
-interface Word {
-  id: number;
-  english_word: string;
-  russian_translation: string;
-  examples: string[];
-  status: 'learning' | 'done';
-  recall_count: number;
-  category?: string;
-}
-
-
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [words, setWords] = useState<Word[]>([]);
@@ -275,6 +259,11 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     }
   };
 
+  const handleCategoryClick = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setViewMode('list');
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -302,258 +291,42 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           </TabsList>
 
           <TabsContent value="list" className="mt-6">
-            <div className="flex flex-col md:flex-row gap-4 mb-6">
-              <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-                <SelectTrigger className="w-full md:w-[200px]">
-                  <SelectValue placeholder="Фильтр" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все слова</SelectItem>
-                  <SelectItem value="learning">Изучаю</SelectItem>
-                  <SelectItem value="done">Выучил</SelectItem>
-                </SelectContent>
-              </Select>
-
-          <div className="flex flex-wrap gap-2">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex-1 md:flex-none">
-                  <Icon name="Plus" size={18} className="mr-2" />
-                  Добавить слова
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Добавить новые слова</DialogTitle>
-                  <DialogDescription>
-                    Введите слова через запятую. Перевод и примеры будут сгенерированы автоматически.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="words">Слова</Label>
-                    <Input
-                      id="words"
-                      placeholder="например: serendipity, embrace, resilient"
-                      value={newWord}
-                      onChange={(e) => setNewWord(e.target.value)}
-                    />
-                  </div>
-                  <Button onClick={handleAddWord} className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
-                        <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
-                        Добавление...
-                      </>
-                    ) : (
-                      'Добавить'
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="secondary" className="flex-1 md:flex-none">
-                  <Icon name="Sparkles" size={18} className="mr-2" />
-                  Попросить ИИ
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>ИИ добавит слова за вас</DialogTitle>
-                  <DialogDescription>
-                    Какие слова вы хотите добавить? После вашего запроса ИИ добавит 15 слов в ваш словарь.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ai-prompt">Ваш запрос</Label>
-                    <Input
-                      id="ai-prompt"
-                      placeholder="например: слова для путешествий или деловая лексика"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                    />
-                  </div>
-                  <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
-                    <Icon name="Info" size={16} className="inline mr-2" />
-                    ИИ подберёт 15 английских слов с переводами и примерами по вашему запросу
-                  </div>
-                  <Button onClick={handleAiGenerate} className="w-full" disabled={isLoading || !aiPrompt.trim()}>
-                    {isLoading ? (
-                      <>
-                        <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
-                        Генерация слов...
-                      </>
-                    ) : (
-                      <>
-                        <Icon name="Sparkles" size={18} className="mr-2" />
-                        Сгенерировать слова
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-
-            <Button 
-              variant="outline" 
-              className="flex-1 md:flex-none"
-              onClick={() => setIsSetsDialogOpen(true)}
-            >
-              <Icon name="Package" size={18} className="mr-2" />
-              Наборы
-            </Button>
-              </div>
-            </div>
-
-            {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Icon name="Loader2" size={32} className="animate-spin text-primary" />
-            <span className="ml-3 text-lg text-muted-foreground">Загрузка слов...</span>
-          </div>
-        )}
-
-        {!isLoading && filteredWords.length === 0 && (
-          <div className="text-center py-12">
-            <Icon name="BookOpen" size={48} className="mx-auto mb-4 text-muted-foreground" />
-            <p className="text-lg text-muted-foreground mb-2">Словарь пуст</p>
-            <p className="text-sm text-muted-foreground">Добавьте первые слова для изучения</p>
-          </div>
-        )}
-
-        {!isLoading && filteredWords.length > 0 && (
-          <div className="grid gap-4">
-            {filteredWords.map((word) => (
-            <Card key={word.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="font-display text-xl mb-2">
-                      {word.english_word}
-                    </CardTitle>
-                    <CardDescription className="text-base">
-                      {word.russian_translation}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <Badge variant={word.status === 'done' ? 'default' : 'secondary'}>
-                      {word.status === 'learning' ? '📖 Изучаю' : '✅ Выучил'}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {word.recall_count} повторений
-                    </span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-2">Примеры:</p>
-                    <ul className="space-y-1">
-                      {word.examples.map((ex, idx) => (
-                        <li key={idx} className="text-sm text-foreground pl-4 relative before:content-['•'] before:absolute before:left-0">
-                          {ex}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStatusChange(word.id, word.status === 'learning' ? 'done' : 'learning')}
-                    >
-                      <Icon name={word.status === 'learning' ? 'Check' : 'RotateCcw'} size={16} className="mr-1" />
-                      {word.status === 'learning' ? 'Выучил' : 'Вернуть'}
-                    </Button>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="ghost" onClick={() => setSelectedWord(word)}>
-                          <Icon name="Trash2" size={16} className="text-destructive" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Удалить слово?</DialogTitle>
-                          <DialogDescription>
-                            Вы уверены, что хотите удалить "{word.english_word}" из словаря?
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="outline" onClick={() => setSelectedWord(null)}>
-                            Отмена
-                          </Button>
-                          <Button variant="destructive" onClick={() => handleDelete(word.id)}>
-                            Удалить
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-              </div>
-            )}
-
-            {!isLoading && filteredWords.length === 0 && filterStatus !== 'all' && (
-              <Card className="text-center py-12">
-                <CardContent>
-                  <Icon name="BookOpen" size={48} className="mx-auto text-muted-foreground mb-4" />
-                  <p className="text-lg text-muted-foreground">
-                    {`Нет слов в категории "${filterStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
+            <WordsListView
+              user={user}
+              words={words}
+              filteredWords={filteredWords}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              isLoading={isLoading}
+              newWord={newWord}
+              setNewWord={setNewWord}
+              aiPrompt={aiPrompt}
+              setAiPrompt={setAiPrompt}
+              isAddDialogOpen={isAddDialogOpen}
+              setIsAddDialogOpen={setIsAddDialogOpen}
+              isAiDialogOpen={isAiDialogOpen}
+              setIsAiDialogOpen={setIsAiDialogOpen}
+              isSetsDialogOpen={isSetsDialogOpen}
+              setIsSetsDialogOpen={setIsSetsDialogOpen}
+              onAddWord={handleAddWord}
+              onAiGenerate={handleAiGenerate}
+              onAddWordSet={handleAddWordSet}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
+              onSelectWord={setSelectedWord}
+            />
           </TabsContent>
 
           <TabsContent value="categories" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
-              {categoriesWithWords.map(category => (
-                <Card 
-                  key={category.id}
-                  className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
-                  onClick={() => {
-                    setSelectedCategory(category.id);
-                    setViewMode('list');
-                  }}
-                >
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div className="text-3xl">{category.icon}</div>
-                      <Badge variant="secondary">
-                        {wordsByCategory[category.id].length}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-lg mt-2">{category.title}</CardTitle>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-            
-            {categoriesWithWords.length === 0 && !isLoading && (
-              <div className="text-center py-12">
-                <Icon name="Folder" size={48} className="mx-auto mb-4 text-muted-foreground" />
-                <p className="text-lg text-muted-foreground mb-2">Нет категорий</p>
-                <p className="text-sm text-muted-foreground">Добавьте слова, чтобы они автоматически распределились по категориям</p>
-              </div>
-            )}
+            <WordsCategoriesView
+              categoriesWithWords={categoriesWithWords}
+              wordsByCategory={wordsByCategory}
+              isLoading={isLoading}
+              onCategoryClick={handleCategoryClick}
+            />
           </TabsContent>
         </Tabs>
       </main>
-
-      <WordSetsDialog
-        open={isSetsDialogOpen}
-        onOpenChange={setIsSetsDialogOpen}
-        user={user}
-        onAddSet={handleAddWordSet}
-      />
     </div>
   );
 };
