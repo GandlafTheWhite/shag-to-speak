@@ -42,8 +42,13 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
             data = response.json()
             print(f'GenAPI response for "{word}": {json.dumps(data)}')
             
-            if 'output' in data and 'choices' in data['output']:
+            content = None
+            if 'response' in data and len(data['response']) > 0:
+                content = data['response'][0]['message']['content']
+            elif 'output' in data and 'choices' in data['output']:
                 content = data['output']['choices'][0]['message']['content']
+            
+            if content:
                 content_clean = content.strip()
                 
                 if content_clean.startswith('```json'):
@@ -62,7 +67,7 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                     'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
                 }
             else:
-                print(f'GenAPI response missing output/choices for "{word}"')
+                print(f'GenAPI response missing expected structure for "{word}"')
                 return {
                     'translation': 'перевод генерируется...',
                     'examples': ['Примеры будут добавлены']

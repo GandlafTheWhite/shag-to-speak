@@ -38,8 +38,13 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
         if response.status_code == 200:
             data = response.json()
             
-            if 'output' in data and 'choices' in data['output']:
+            content = None
+            if 'response' in data and len(data['response']) > 0:
+                content = data['response'][0]['message']['content']
+            elif 'output' in data and 'choices' in data['output']:
                 content = data['output']['choices'][0]['message']['content']
+            
+            if content:
                 content_clean = content.strip()
                 
                 if content_clean.startswith('```json'):
