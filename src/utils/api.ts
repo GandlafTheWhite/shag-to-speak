@@ -30,6 +30,7 @@ export interface Word {
   recall_count: number;
   last_recall_date?: string;
   created_at?: string;
+  category?: string;
 }
 
 export interface Exercise {

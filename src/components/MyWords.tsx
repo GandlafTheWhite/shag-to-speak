@@ -12,6 +12,7 @@ import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
 import WordSetsDialog from './WordSetsDialog';
 import { apiClient, type Word as ApiWord } from '@/utils/api';
+import { CATEGORIES, getCategoryTitle, getCategoryIcon } from '@/data/categories';
 
 interface MyWordsProps {
   user: User;
@@ -26,13 +27,16 @@ interface Word {
   examples: string[];
   status: 'learning' | 'done';
   recall_count: number;
+  category?: string;
 }
 
 
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [words, setWords] = useState<Word[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'categories'>('list');
   const [filterStatus, setFilterStatus] = useState<'all' | 'learning' | 'done'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [newWord, setNewWord] = useState('');
   const [selectedWord, setSelectedWord] = useState<Word | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -60,7 +64,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         russian_translation: w.russian_translation,
         examples: w.examples,
         status: w.status,
-        recall_count: w.recall_count
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized'
       })));
       updateUser({ word_count: validWords.length });
     } catch (error) {
@@ -75,8 +80,21 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     }
   };
 
-  const filteredWords = words.filter(w => 
-    filterStatus === 'all' ? true : w.status === filterStatus
+  const filteredWords = words.filter(w => {
+    const statusMatch = filterStatus === 'all' || w.status === filterStatus;
+    const categoryMatch = selectedCategory === 'all' || w.category === selectedCategory;
+    return statusMatch && categoryMatch;
+  });
+
+  const wordsByCategory = words.reduce((acc, word) => {
+    const category = word.category || 'uncategorized';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(word);
+    return acc;
+  }, {} as Record<string, Word[]>);
+
+  const categoriesWithWords = CATEGORIES.filter(cat => 
+    wordsByCategory[cat.id] && wordsByCategory[cat.id].length > 0
   );
 
   const handleAddWord = async () => {
@@ -94,7 +112,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         russian_translation: w.russian_translation,
         examples: w.examples,
         status: w.status,
-        recall_count: w.recall_count
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized'
       })), ...words]);
       
       updateUser({ word_count: words.length + result.count });
@@ -179,7 +198,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         russian_translation: w.russian_translation,
         examples: w.examples,
         status: w.status,
-        recall_count: w.recall_count
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized'
       })), ...words]);
       
       updateUser({ word_count: words.length + result.count });
@@ -232,7 +252,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         russian_translation: w.russian_translation,
         examples: w.examples,
         status: w.status,
-        recall_count: w.recall_count
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized'
       })), ...words]);
       
       updateUser({ word_count: words.length + result.count });
@@ -268,17 +289,30 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
-            <SelectTrigger className="w-full md:w-[200px]">
-              <SelectValue placeholder="Фильтр" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все слова</SelectItem>
-              <SelectItem value="learning">Изучаю</SelectItem>
-              <SelectItem value="done">Выучил</SelectItem>
-            </SelectContent>
-          </Select>
+        <Tabs value={viewMode} onValueChange={(v: any) => setViewMode(v)} className="mb-6">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+            <TabsTrigger value="list">
+              <Icon name="List" size={18} className="mr-2" />
+              Списком
+            </TabsTrigger>
+            <TabsTrigger value="categories">
+              <Icon name="Grid3x3" size={18} className="mr-2" />
+              По категориям
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="mt-6">
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+                <SelectTrigger className="w-full md:w-[200px]">
+                  <SelectValue placeholder="Фильтр" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все слова</SelectItem>
+                  <SelectItem value="learning">Изучаю</SelectItem>
+                  <SelectItem value="done">Выучил</SelectItem>
+                </SelectContent>
+              </Select>
 
           <div className="flex flex-wrap gap-2">
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -372,10 +406,10 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
               <Icon name="Package" size={18} className="mr-2" />
               Наборы
             </Button>
-          </div>
-        </div>
+              </div>
+            </div>
 
-        {isLoading && (
+            {isLoading && (
           <div className="flex items-center justify-center py-12">
             <Icon name="Loader2" size={32} className="animate-spin text-primary" />
             <span className="ml-3 text-lg text-muted-foreground">Загрузка слов...</span>
@@ -464,19 +498,54 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
               </CardContent>
             </Card>
           ))}
-          </div>
-        )}
+              </div>
+            )}
 
-        {!isLoading && filteredWords.length === 0 && filterStatus !== 'all' && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Icon name="BookOpen" size={48} className="mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg text-muted-foreground">
-                {`Нет слов в категории "${filterStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`}
-              </p>
-            </CardContent>
-          </Card>
-        )}
+            {!isLoading && filteredWords.length === 0 && filterStatus !== 'all' && (
+              <Card className="text-center py-12">
+                <CardContent>
+                  <Icon name="BookOpen" size={48} className="mx-auto text-muted-foreground mb-4" />
+                  <p className="text-lg text-muted-foreground">
+                    {`Нет слов в категории "${filterStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="categories" className="mt-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
+              {categoriesWithWords.map(category => (
+                <Card 
+                  key={category.id}
+                  className="cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                  onClick={() => {
+                    setSelectedCategory(category.id);
+                    setViewMode('list');
+                  }}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="text-3xl">{category.icon}</div>
+                      <Badge variant="secondary">
+                        {wordsByCategory[category.id].length}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-lg mt-2">{category.title}</CardTitle>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+            
+            {categoriesWithWords.length === 0 && !isLoading && (
+              <div className="text-center py-12">
+                <Icon name="Folder" size={48} className="mx-auto mb-4 text-muted-foreground" />
+                <p className="text-lg text-muted-foreground mb-2">Нет категорий</p>
+                <p className="text-sm text-muted-foreground">Добавьте слова, чтобы они автоматически распределились по категориям</p>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       <WordSetsDialog

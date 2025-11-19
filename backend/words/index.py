@@ -11,12 +11,70 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import requests
 
+CATEGORIES = [
+    'people_family', 'appearance', 'character_personality', 'emotions_feelings',
+    'health_medicine', 'body_parts', 'clothes_fashion', 'food_drink',
+    'cooking_kitchen', 'house_home', 'furniture_appliances', 'daily_routine',
+    'work_jobs', 'business_money', 'education_school', 'university_studies',
+    'science_technology', 'computers_internet', 'sport_fitness', 'hobbies_free_time',
+    'music', 'art_literature', 'cinema_theatre', 'media_news',
+    'travel_transport', 'countries_nationalities', 'languages', 'weather',
+    'nature_environment', 'animals_pets', 'plants_gardening', 'city_countryside',
+    'shops_shopping', 'services', 'crime_law', 'politics_government',
+    'war_peace', 'history', 'religion', 'society_social_issues',
+    'holidays_celebrations', 'time_dates', 'numbers_quantities', 'colours',
+    'shapes_sizes', 'materials', 'tools_equipment'
+]
+
+def categorize_word(word: str) -> str:
+    api_key = os.environ.get('GENAPI_KEY', '')
+    if not api_key:
+        return 'uncategorized'
+    
+    try:
+        response = requests.post(
+            'https://api.gen-api.ru/api/v1/networks/o1-mini',
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            },
+            json={
+                'is_sync': True,
+                'messages': [{
+                    'role': 'user',
+                    'content': f'Определи к какой категории относится английское слово "{word}". Выбери ОДНУ категорию из списка: {", ".join(CATEGORIES)}. Ответь ТОЛЬКО названием категории, без дополнительного текста.'
+                }],
+                'model': 'o1-mini-2024-09-12',
+                'stream': False
+            },
+            timeout=15
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            content = None
+            if 'response' in data and len(data['response']) > 0:
+                content = data['response'][0]['message']['content']
+            elif 'output' in data and 'choices' in data['output']:
+                content = data['output']['choices'][0]['message']['content']
+            
+            if content:
+                category = content.strip().lower().replace(' ', '_').replace('&', '').replace('–', '_')
+                if category in CATEGORIES:
+                    return category
+        
+        return 'uncategorized'
+    except Exception as e:
+        print(f'Error categorizing word "{word}": {str(e)}')
+        return 'uncategorized'
+
 def generate_translation_and_examples(word: str) -> Dict[str, Any]:
     api_key = os.environ.get('GENAPI_KEY', '')
     if not api_key:
         return {
             'translation': 'перевод генерируется...',
-            'examples': ['Примеры будут добавлены']
+            'examples': ['Примеры будут добавлены'],
+            'category': 'uncategorized'
         }
     
     try:
@@ -62,27 +120,32 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                 print(f'Cleaned content for "{word}": {content_clean}')
                 
                 result = json.loads(content_clean)
+                category = categorize_word(word)
                 return {
                     'translation': result.get('translation', 'перевод'),
-                    'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
+                    'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
+                    'category': category
                 }
             else:
                 print(f'GenAPI response missing expected structure for "{word}"')
                 return {
                     'translation': 'перевод генерируется...',
-                    'examples': ['Примеры будут добавлены']
+                    'examples': ['Примеры будут добавлены'],
+                    'category': 'uncategorized'
                 }
         else:
             print(f'GenAPI returned status {response.status_code} for "{word}"')
             return {
                 'translation': 'перевод генерируется...',
-                'examples': ['Примеры будут добавлены']
+                'examples': ['Примеры будут добавлены'],
+                'category': 'uncategorized'
             }
     except Exception as e:
         print(f'Error generating translation for "{word}": {str(e)}')
         return {
             'translation': 'перевод генерируется...',
-            'examples': ['Примеры будут добавлены']
+            'examples': ['Примеры будут добавлены'],
+            'category': 'uncategorized'
         }
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -121,7 +184,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             cursor.execute(
                 """SELECT id, english_word, russian_translation, examples, status, recall_count, 
-                          last_recall_date, created_at
+                          last_recall_date, created_at, category
                    FROM t_p7147437_shag_to_speak.words 
                    WHERE user_id = %s
                    ORDER BY created_at DESC""",
@@ -139,7 +202,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': word['status'],
                     'recall_count': word['recall_count'] or 0,
                     'last_recall_date': word['last_recall_date'].isoformat() if word['last_recall_date'] else None,
-                    'created_at': word['created_at'].isoformat() if word['created_at'] else None
+                    'created_at': word['created_at'].isoformat() if word['created_at'] else None,
+                    'category': word.get('category', 'uncategorized')
                 })
             
             return {
@@ -216,10 +280,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cursor.execute(
                     """INSERT INTO t_p7147437_shag_to_speak.words 
-                       (user_id, english_word, russian_translation, examples, status, recall_count)
-                       VALUES (%s, %s, %s, %s, 'learning', 0)
-                       RETURNING id, english_word, russian_translation, examples, status, recall_count""",
-                    (user_id, word_text, gen_data['translation'], gen_data['examples'])
+                       (user_id, english_word, russian_translation, examples, status, recall_count, category)
+                       VALUES (%s, %s, %s, %s, 'learning', 0, %s)
+                       RETURNING id, english_word, russian_translation, examples, status, recall_count, category""",
+                    (user_id, word_text, gen_data['translation'], gen_data['examples'], gen_data.get('category', 'uncategorized'))
                 )
                 new_word = cursor.fetchone()
                 added_words.append({
@@ -228,7 +292,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'russian_translation': new_word['russian_translation'],
                     'examples': new_word['examples'],
                     'status': new_word['status'],
-                    'recall_count': new_word['recall_count']
+                    'recall_count': new_word['recall_count'],
+                    'category': new_word.get('category', 'uncategorized')
                 })
             
             if duplicate_words and not added_words:
