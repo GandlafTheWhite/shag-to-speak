@@ -40,6 +40,7 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
         
         if response.status_code == 200:
             data = response.json()
+            print(f'GenAPI response for "{word}": {json.dumps(data)}')
             
             if 'output' in data and 'choices' in data['output']:
                 content = data['output']['choices'][0]['message']['content']
@@ -53,22 +54,27 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                     content_clean = content_clean[:-3]
                 content_clean = content_clean.strip()
                 
+                print(f'Cleaned content for "{word}": {content_clean}')
+                
                 result = json.loads(content_clean)
                 return {
                     'translation': result.get('translation', 'перевод'),
                     'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3'])
                 }
             else:
+                print(f'GenAPI response missing output/choices for "{word}"')
                 return {
                     'translation': 'перевод генерируется...',
                     'examples': ['Примеры будут добавлены']
                 }
         else:
+            print(f'GenAPI returned status {response.status_code} for "{word}"')
             return {
                 'translation': 'перевод генерируется...',
                 'examples': ['Примеры будут добавлены']
             }
-    except Exception:
+    except Exception as e:
+        print(f'Error generating translation for "{word}": {str(e)}')
         return {
             'translation': 'перевод генерируется...',
             'examples': ['Примеры будут добавлены']
