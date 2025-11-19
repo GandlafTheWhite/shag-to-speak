@@ -191,10 +191,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             added_words = []
             failed_words = []
+            duplicate_words = []
             
             for word_text in words_input:
                 word_text = word_text.strip().lower()
                 if not word_text:
+                    continue
+                
+                cursor.execute(
+                    "SELECT id FROM t_p7147437_shag_to_speak.words WHERE user_id = %s AND english_word = %s",
+                    (user_id, word_text)
+                )
+                existing = cursor.fetchone()
+                
+                if existing:
+                    duplicate_words.append(word_text)
                     continue
                 
                 gen_data = generate_translation_and_examples(word_text)
@@ -220,6 +231,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'recall_count': new_word['recall_count']
                 })
             
+            if duplicate_words and not added_words:
+                words_list = ', '.join(duplicate_words)
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': f'Эти слова уже есть в твоём словаре :) — {words_list}'}),
+                    'isBase64Encoded': False
+                }
+            
             if not added_words and failed_words:
                 return {
                     'statusCode': 500,
@@ -230,10 +250,19 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             conn.commit()
             
+            response_data = {
+                'words': added_words,
+                'count': len(added_words)
+            }
+            
+            if duplicate_words:
+                response_data['duplicates'] = duplicate_words
+                response_data['message'] = f'Эти слова уже есть в словаре: {", ".join(duplicate_words)}'
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'words': added_words, 'count': len(added_words)}),
+                'body': json.dumps(response_data),
                 'isBase64Encoded': False
             }
         

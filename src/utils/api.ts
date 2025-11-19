@@ -165,7 +165,7 @@ class ApiClient {
     return data.words;
   }
 
-  async addWords(words: string[]): Promise<{ words: Word[]; count: number }> {
+  async addWords(words: string[]): Promise<{ words: Word[]; count: number; message?: string; duplicates?: string[] }> {
     const response = await fetch(API_URLS.words, {
       method: 'POST',
       headers: this.getHeaders(),

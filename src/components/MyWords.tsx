@@ -102,10 +102,21 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setNewWord('');
       setIsAddDialogOpen(false);
       
-      toast({
-        title: 'Слова добавлены!',
-        description: `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}`
-      });
+      if (result.count > 0) {
+        const description = result.message 
+          ? `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}. ${result.message}`
+          : `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}`;
+        
+        toast({
+          title: 'Слова добавлены!',
+          description
+        });
+      } else if (result.message) {
+        toast({
+          title: 'Информация',
+          description: result.message
+        });
+      }
     } catch (error) {
       toast({
         title: 'Ошибка',
