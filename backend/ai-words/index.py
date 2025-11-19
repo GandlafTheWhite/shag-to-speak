@@ -11,10 +11,15 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import requests
 
-def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any]]:
+def generate_words_by_prompt(prompt: str, count: int = 15, existing_words: List[str] = None) -> List[Dict[str, Any]]:
     api_key = os.environ.get('GENAPI_KEY', '')
     if not api_key:
         return []
+    
+    exclude_text = ''
+    if existing_words and len(existing_words) > 0:
+        words_list = ', '.join(existing_words[:50])
+        exclude_text = f' НЕ включай следующие слова которые уже есть у пользователя: {words_list}.'
     
     try:
         response = requests.post(
@@ -27,7 +32,7 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
                 'is_sync': True,
                 'messages': [{
                     'role': 'user',
-                    'content': f'На основе запроса пользователя: "{prompt}" - подбери {count} английских слов которые соответствуют этой теме. Для каждого слова дай русский перевод и 3 коротких примера использования на английском. Ответь ТОЛЬКО в формате JSON массива без дополнительного текста: [{{"word": "english_word", "translation": "русский перевод", "examples": ["Example 1", "Example 2", "Example 3"]}}]'
+                    'content': f'На основе запроса пользователя: "{prompt}" - подбери {count} английских слов которые соответствуют этой теме.{exclude_text} Для каждого слова дай русский перевод и 3 коротких примера использования на английском. Ответь ТОЛЬКО в формате JSON массива без дополнительного текста: [{{"word": "english_word", "translation": "русский перевод", "examples": ["Example 1", "Example 2", "Example 3"]}}]'
                 }],
                 'model': 'o1-mini-2024-09-12',
                 'stream': False
@@ -61,7 +66,8 @@ def generate_words_by_prompt(prompt: str, count: int = 15) -> List[Dict[str, Any
                 return []
         else:
             return []
-    except Exception:
+    except Exception as e:
+        print(f'Error in generate_words_by_prompt: {str(e)}')
         return []
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -146,7 +152,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        generated_words = generate_words_by_prompt(prompt, count)
+        cursor.execute(
+            "SELECT english_word FROM t_p7147437_shag_to_speak.words WHERE user_id = %s",
+            (user_id,)
+        )
+        existing_words_rows = cursor.fetchall()
+        existing_words = [row['english_word'] for row in existing_words_rows]
+        
+        generated_words = generate_words_by_prompt(prompt, count, existing_words)
         
         if not generated_words:
             return {
@@ -195,7 +208,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': new_word['status'],
                     'recall_count': new_word['recall_count']
                 })
-            except Exception:
+            except Exception as e:
+                print(f'Error adding word: {str(e)}')
                 continue
         
         if not added_words:
