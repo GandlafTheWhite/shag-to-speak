@@ -281,7 +281,14 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
                     />
                   </div>
                   <Button onClick={handleAddWord} className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Добавление...' : 'Добавить'}
+                    {isLoading ? (
+                      <>
+                        <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                        Добавление...
+                      </>
+                    ) : (
+                      'Добавить'
+                    )}
                   </Button>
                 </div>
               </DialogContent>
@@ -316,7 +323,17 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
                     ИИ подберёт 15 английских слов с переводами и примерами по вашему запросу
                   </div>
                   <Button onClick={handleAiGenerate} className="w-full" disabled={isLoading || !aiPrompt.trim()}>
-                    {isLoading ? 'Генерация...' : 'Сгенерировать слова'}
+                    {isLoading ? (
+                      <>
+                        <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                        Генерация слов...
+                      </>
+                    ) : (
+                      <>
+                        <Icon name="Sparkles" size={18} className="mr-2" />
+                        Сгенерировать слова
+                      </>
+                    )}
                   </Button>
                 </div>
               </DialogContent>
@@ -333,8 +350,24 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           </div>
         </div>
 
-        <div className="grid gap-4">
-          {filteredWords.map((word) => (
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Icon name="Loader2" size={32} className="animate-spin text-primary" />
+            <span className="ml-3 text-lg text-muted-foreground">Загрузка слов...</span>
+          </div>
+        )}
+
+        {!isLoading && filteredWords.length === 0 && (
+          <div className="text-center py-12">
+            <Icon name="BookOpen" size={48} className="mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg text-muted-foreground mb-2">Словарь пуст</p>
+            <p className="text-sm text-muted-foreground">Добавьте первые слова для изучения</p>
+          </div>
+        )}
+
+        {!isLoading && filteredWords.length > 0 && (
+          <div className="grid gap-4">
+            {filteredWords.map((word) => (
             <Card key={word.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -406,17 +439,15 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+        )}
 
-        {filteredWords.length === 0 && (
+        {!isLoading && filteredWords.length === 0 && filterStatus !== 'all' && (
           <Card className="text-center py-12">
             <CardContent>
               <Icon name="BookOpen" size={48} className="mx-auto text-muted-foreground mb-4" />
               <p className="text-lg text-muted-foreground">
-                {filterStatus === 'all' 
-                  ? 'Словарь пуст. Добавьте первые слова!' 
-                  : `Нет слов в категории "${filterStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`
-                }
+                {`Нет слов в категории "${filterStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`}
               </p>
             </CardContent>
           </Card>
