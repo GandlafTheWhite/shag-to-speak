@@ -1,10 +1,17 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import Icon from '@/components/ui/icon';
-import WordSetsDialog from '../WordSetsDialog';
-import type { User } from '@/pages/Index';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import Icon from "@/components/ui/icon";
+import WordSetsDialog from "../WordSetsDialog";
+import type { User } from "@/pages/Index";
 
 interface AddWordDialogsProps {
   user: User;
@@ -39,7 +46,7 @@ const AddWordDialogs = ({
   setIsSetsDialogOpen,
   onAddWord,
   onAiGenerate,
-  onAddWordSet
+  onAddWordSet,
 }: AddWordDialogsProps) => {
   return (
     <div className="flex flex-wrap gap-2">
@@ -54,7 +61,8 @@ const AddWordDialogs = ({
           <DialogHeader>
             <DialogTitle>Добавить новые слова</DialogTitle>
             <DialogDescription>
-              Введите слова через запятую. Перевод и примеры будут сгенерированы автоматически.
+              Введите слова через запятую. Перевод и примеры будут сгенерированы
+              автоматически.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -70,11 +78,15 @@ const AddWordDialogs = ({
             <Button onClick={onAddWord} className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                  <Icon
+                    name="Loader2"
+                    size={18}
+                    className="mr-2 animate-spin"
+                  />
                   Добавление...
                 </>
               ) : (
-                'Добавить'
+                "Добавить"
               )}
             </Button>
           </div>
@@ -85,14 +97,15 @@ const AddWordDialogs = ({
         <DialogTrigger asChild>
           <Button variant="secondary" className="flex-1 md:flex-none">
             <Icon name="Sparkles" size={18} className="mr-2" />
-            Попросить ИИ
+            Добавить 15 слов
           </Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>ИИ добавит слова за вас</DialogTitle>
             <DialogDescription>
-              Какие слова вы хотите добавить? После вашего запроса ИИ добавит 15 слов в ваш словарь.
+              Какие слова вы хотите добавить? После вашего запроса ИИ добавит 15
+              слов в ваш словарь.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -107,12 +120,21 @@ const AddWordDialogs = ({
             </div>
             <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
               <Icon name="Info" size={16} className="inline mr-2" />
-              ИИ подберёт 15 английских слов с переводами и примерами по вашему запросу
+              ИИ подберёт 15 английских слов с переводами и примерами по вашему
+              запросу
             </div>
-            <Button onClick={onAiGenerate} className="w-full" disabled={isLoading || !aiPrompt.trim()}>
+            <Button
+              onClick={onAiGenerate}
+              className="w-full"
+              disabled={isLoading || !aiPrompt.trim()}
+            >
               {isLoading ? (
                 <>
-                  <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                  <Icon
+                    name="Loader2"
+                    size={18}
+                    className="mr-2 animate-spin"
+                  />
                   Генерация слов...
                 </>
               ) : (
@@ -126,8 +148,8 @@ const AddWordDialogs = ({
         </DialogContent>
       </Dialog>
 
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         className="flex-1 md:flex-none"
         onClick={() => setIsSetsDialogOpen(true)}
       >
