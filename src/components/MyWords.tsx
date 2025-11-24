@@ -28,6 +28,7 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [isAiDialogOpen, setIsAiDialogOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isCategorizing, setIsCategorizing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -352,6 +353,28 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     setViewMode('list');
   };
 
+  const handleCategorizeWords = async () => {
+    try {
+      setIsCategorizing(true);
+      const result = await apiClient.categorizeWords();
+      
+      await loadWords();
+      
+      toast({
+        title: 'Рассортировка завершена!',
+        description: result.message
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось рассортировать слова',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -410,7 +433,9 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
               categoriesWithWords={categoriesWithWords}
               wordsByCategory={wordsByCategory}
               isLoading={isLoading}
+              isCategorizing={isCategorizing}
               onCategoryClick={handleCategoryClick}
+              onCategorizeWords={handleCategorizeWords}
             />
           </TabsContent>
         </Tabs>

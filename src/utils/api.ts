@@ -267,6 +267,20 @@ class ApiClient {
 
     return await response.json();
   }
+
+  async categorizeWords(): Promise<{ updated: number; message: string }> {
+    const response = await fetch('https://functions.poehali.dev/e04e5f5d-cc07-4dd2-b55e-690bf8775c20', {
+      method: 'POST',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to categorize words');
+    }
+
+    return await response.json();
+  }
 }
 
 export const apiClient = new ApiClient();

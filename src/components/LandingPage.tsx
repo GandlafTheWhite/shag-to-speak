@@ -17,6 +17,7 @@ interface LandingPageProps {
 
 const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showModeDialog, setShowModeDialog] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -137,16 +138,11 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                 <Button 
                   size="lg" 
                   className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 transform"
-                  onClick={() => {
-                    setIsRegister(true);
-                    setShowAuthDialog(true);
-                  }}
+                  onClick={() => setShowModeDialog(true)}
                 >
                   Начать бесплатно
                   <Icon name="ArrowRight" size={20} className="ml-2" />
                 </Button>
-                
-
               </div>
 
               <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted-foreground">
@@ -277,10 +273,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           <Button 
             size="lg" 
             className="text-xl px-12 py-8 shadow-xl hover:shadow-2xl transition-all hover:scale-110 transform animate-pulse hover:animate-none"
-            onClick={() => {
-              setIsRegister(true);
-              setShowAuthDialog(true);
-            }}
+            onClick={() => setShowModeDialog(true)}
           >
             Попробовать бесплатно
             <Icon name="Rocket" size={24} className="ml-3" />
@@ -290,16 +283,52 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             Уже есть аккаунт?{' '}
             <button 
               className="text-primary hover:underline font-medium"
-              onClick={() => {
-                setIsRegister(false);
-                setShowAuthDialog(true);
-              }}
+              onClick={() => setShowModeDialog(true)}
             >
               Войти
             </button>
           </p>
         </div>
       </section>
+
+      {/* Mode Selection Dialog */}
+      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-display text-center">Начать изучение</DialogTitle>
+            <DialogDescription className="text-center">
+              Выберите действие
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 mt-4">
+            <Button
+              size="lg"
+              className="w-full text-lg py-6"
+              onClick={() => {
+                setShowModeDialog(false);
+                setIsRegister(true);
+                setShowAuthDialog(true);
+              }}
+            >
+              <Icon name="UserPlus" size={20} className="mr-2" />
+              Регистрация
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full text-lg py-6"
+              onClick={() => {
+                setShowModeDialog(false);
+                setIsRegister(false);
+                setShowAuthDialog(true);
+              }}
+            >
+              <Icon name="LogIn" size={20} className="mr-2" />
+              Вход
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Auth Dialog */}
       <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>

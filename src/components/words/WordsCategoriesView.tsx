@@ -1,5 +1,6 @@
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { type Category } from '@/data/categories';
 import { type Word } from './WordCard';
@@ -8,17 +9,50 @@ interface WordsCategoriesViewProps {
   categoriesWithWords: Category[];
   wordsByCategory: Record<string, Word[]>;
   isLoading: boolean;
+  isCategorizing: boolean;
   onCategoryClick: (categoryId: string) => void;
+  onCategorizeWords: () => void;
 }
 
 const WordsCategoriesView = ({
   categoriesWithWords,
   wordsByCategory,
   isLoading,
-  onCategoryClick
+  isCategorizing,
+  onCategoryClick,
+  onCategorizeWords
 }: WordsCategoriesViewProps) => {
+  const uncategorizedCount = wordsByCategory['uncategorized']?.length || 0;
   return (
     <>
+      {uncategorizedCount > 0 && (
+        <div className="mb-6 p-4 bg-accent/30 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Icon name="Sparkles" size={24} className="text-primary" />
+            <div>
+              <p className="font-medium">Слов без категории: {uncategorizedCount}</p>
+              <p className="text-sm text-muted-foreground">ИИ может автоматически распределить их по категориям</p>
+            </div>
+          </div>
+          <Button
+            onClick={onCategorizeWords}
+            disabled={isCategorizing}
+            size="lg"
+          >
+            {isCategorizing ? (
+              <>
+                <Icon name="Loader2" size={18} className="mr-2 animate-spin" />
+                Рассортировка...
+              </>
+            ) : (
+              <>
+                <Icon name="Sparkles" size={18} className="mr-2" />
+                Рассортировать через ИИ
+              </>
+            )}
+          </Button>
+        </div>
+      )}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-8">
         {categoriesWithWords.map(category => (
           <Card 

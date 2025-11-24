@@ -1,18 +1,68 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
+import { apiClient } from '@/utils/api';
+import { useToast } from '@/hooks/use-toast';
 
 interface DashboardProps {
   user: User;
   onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings') => void;
   onLogout: () => void;
+  updateUser: (data: Partial<User>) => void;
 }
 
-const Dashboard = ({ user, onNavigate, onLogout }: DashboardProps) => {
+const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) => {
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newWord, setNewWord] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
   const wordLimit = user.status === 'free' ? 50 : 999;
   const progressPercent = (user.word_count / wordLimit) * 100;
+
+  const handleQuickAddWord = async () => {
+    if (!newWord.trim()) return;
+
+    const wordsToAdd = newWord.split(',').map(w => w.trim()).filter(w => w);
+
+    try {
+      setIsLoading(true);
+      const result = await apiClient.addWords(wordsToAdd);
+      
+      updateUser({ word_count: user.word_count + result.count });
+      setNewWord('');
+      setIsAddDialogOpen(false);
+      
+      if (result.count > 0) {
+        const description = result.message 
+          ? `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}. ${result.message}`
+          : `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}`;
+        
+        toast({
+          title: 'Слова добавлены!',
+          description
+        });
+      } else if (result.message) {
+        toast({
+          title: 'Информация',
+          description: result.message
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось добавить слова',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -40,9 +90,17 @@ const Dashboard = ({ user, onNavigate, onLogout }: DashboardProps) => {
           <h2 className="text-4xl font-display font-bold text-foreground mb-4">
             Добро пожаловать, {user.name}! 🌟
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground mb-6">
             Ваш путь к английскому продолжается
           </p>
+          <Button 
+            size="lg" 
+            onClick={() => setIsAddDialogOpen(true)}
+            className="shadow-lg hover:shadow-xl transition-all"
+          >
+            <Icon name="Plus" size={20} className="mr-2" />
+            Быстро добавить слово
+          </Button>
         </div>
 
         <div className="grid gap-6 mb-8 md:grid-cols-3">
@@ -169,6 +227,41 @@ const Dashboard = ({ user, onNavigate, onLogout }: DashboardProps) => {
           </div>
         </div>
       </main>
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Добавить слово</DialogTitle>
+            <DialogDescription>
+              Введите одно или несколько слов через запятую
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="word">Английское слово</Label>
+              <Input
+                id="word"
+                value={newWord}
+                onChange={(e) => setNewWord(e.target.value)}
+                placeholder="например: hello, world, cat"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isLoading) {
+                    handleQuickAddWord();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                Отмена
+              </Button>
+              <Button onClick={handleQuickAddWord} disabled={isLoading || !newWord.trim()}>
+                {isLoading ? 'Добавление...' : 'Добавить'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

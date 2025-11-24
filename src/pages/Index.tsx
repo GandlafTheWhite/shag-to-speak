@@ -58,6 +58,7 @@ const Index = () => {
           user={user} 
           onNavigate={setCurrentPage}
           onLogout={handleLogout}
+          updateUser={updateUserData}
         />
       )}
       {currentPage === 'words' && user && (
