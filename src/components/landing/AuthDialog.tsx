@@ -156,7 +156,7 @@ const AuthDialog = ({
 
         <div className="flex justify-center">
           <TelegramLoginButton
-            botName="ShagToSpeakBot"
+            botName="shag_to_speak_bot"
             onAuth={onTelegramAuth}
             buttonSize="large"
           />

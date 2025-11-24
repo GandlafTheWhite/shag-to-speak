@@ -187,6 +187,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
         onOpenChange={setShowModeDialog}
         onSelectRegister={handleSelectRegister}
         onSelectLogin={handleSelectLogin}
+        onTelegramAuth={handleTelegramAuth}
       />
 
       <AuthDialog
