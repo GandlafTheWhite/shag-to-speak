@@ -86,21 +86,37 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
       </header>
 
       <main className="container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 relative">
           <h2 className="text-4xl font-display font-bold text-foreground mb-4">
             Добро пожаловать, {user.name}! 🌟
           </h2>
           <p className="text-lg text-muted-foreground mb-6">
             Ваш путь к английскому продолжается
           </p>
-          <Button 
-            size="lg" 
+          
+          <button
             onClick={() => setIsAddDialogOpen(true)}
-            className="shadow-lg hover:shadow-xl transition-all"
+            className="group relative w-20 h-20 mx-auto transition-transform hover:scale-110 active:scale-95"
           >
-            <Icon name="Plus" size={20} className="mr-2" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-teal-400 to-emerald-400 animate-spin-slow"></div>
+            
+            <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-background via-card to-background flex items-center justify-center">
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="absolute top-1/4 w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-teal-400"></div>
+                <div className="absolute bottom-1/4 w-6 h-6 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400"></div>
+                
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Icon name="Plus" size={28} className="text-primary group-hover:rotate-90 transition-transform duration-300" />
+                </div>
+              </div>
+            </div>
+            
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+          </button>
+          
+          <p className="mt-4 text-sm text-muted-foreground font-medium">
             Быстро добавить слово
-          </Button>
+          </p>
         </div>
 
         <div className="grid gap-6 mb-8 md:grid-cols-3">
