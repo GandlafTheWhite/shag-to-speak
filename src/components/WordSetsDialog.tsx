@@ -17,102 +17,46 @@ interface WordSetsDialogProps {
 }
 
 const WordSetsDialog = ({ open, onOpenChange, user, onAddSet }: WordSetsDialogProps) => {
-  const [selectedSet, setSelectedSet] = useState<string | null>(null);
-
-  const relevantSets = WORD_SETS.filter(set => 
-    user.preferences.includes(set.topic)
-  );
-
-  const otherSets = WORD_SETS.filter(set => 
-    !user.preferences.includes(set.topic)
-  );
-
-  const handleSelectSet = (setId: string) => {
-    onAddSet(setId);
-    setSelectedSet(null);
-    onOpenChange(false);
-  };
-
-  const getTopicLabel = (topicId: string) => {
-    return LEARNING_TOPICS.find(t => t.id === topicId)?.label || topicId;
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh]">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Наборы слов</DialogTitle>
+          <DialogTitle className="font-display text-2xl">Готовые наборы слов</DialogTitle>
           <DialogDescription>
-            Выберите готовый набор для быстрого добавления 50 слов по теме
+            Нужен ли этот функционал?
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[500px] pr-4">
-          {relevantSets.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
-                <Icon name="Star" size={20} className="text-primary" />
-                Рекомендовано для вас
-              </h3>
-              <div className="grid gap-3">
-                {relevantSets.map((set) => (
-                  <Card 
-                    key={set.id} 
-                    className="cursor-pointer hover:shadow-md transition-all hover:border-primary"
-                    onClick={() => handleSelectSet(set.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg mb-2">{set.title}</CardTitle>
-                          <CardDescription>{set.description}</CardDescription>
-                          <div className="flex items-center gap-2 mt-3">
-                            <Badge variant="secondary">{getTopicLabel(set.topic)}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {set.wordCount || set.words.length} слов
-                            </span>
-                          </div>
-                        </div>
-                        <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
+        <div className="space-y-4 py-4">
+          <div className="p-4 bg-accent/50 rounded-lg space-y-3">
+            <div className="flex items-start gap-3">
+              <Icon name="MessageCircle" size={24} className="text-primary flex-shrink-0 mt-1" />
+              <p className="text-sm leading-relaxed">
+                Привет! Мы не понимаем, нужен ли этот функционал при текущей концепции ИИ-генерации!
+              </p>
             </div>
-          )}
+            <p className="text-sm leading-relaxed pl-9">
+              Если ты считаешь, что было бы удобно добавить готовые наборы слов - напиши нам!
+            </p>
+          </div>
 
-          {otherSets.length > 0 && (
-            <div>
-              <h3 className="text-lg font-display font-semibold mb-3">Все наборы</h3>
-              <div className="grid gap-3">
-                {otherSets.map((set) => (
-                  <Card 
-                    key={set.id} 
-                    className="cursor-pointer hover:shadow-md transition-all hover:border-primary"
-                    onClick={() => handleSelectSet(set.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg mb-2">{set.title}</CardTitle>
-                          <CardDescription>{set.description}</CardDescription>
-                          <div className="flex items-center gap-2 mt-3">
-                            <Badge variant="outline">{getTopicLabel(set.topic)}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {set.wordCount || set.words.length} слов
-                            </span>
-                          </div>
-                        </div>
-                        <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </ScrollArea>
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={() => window.open('https://t.me/+QgiLIa1gFRY4Y2Iy', '_blank')}
+          >
+            <Icon name="MessageCircle" size={20} className="mr-2" />
+            Написать в поддержку
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => onOpenChange(false)}
+          >
+            Закрыть
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
