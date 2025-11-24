@@ -2,7 +2,11 @@ const API_URLS = {
   auth: 'https://functions.poehali.dev/ce741311-6fd7-45a8-9770-f5d6979da050',
   words: 'https://functions.poehali.dev/d87144a4-ac34-4dce-bdf8-449ebd85b759',
   exercises: 'https://functions.poehali.dev/dab10f03-8dd4-4dc3-af8d-0cb6fd69aeb7',
-  stats: 'https://functions.poehali.dev/5e32e154-08b5-4bdf-b5dd-bc3de2075ce1'
+  stats: 'https://functions.poehali.dev/5e32e154-08b5-4bdf-b5dd-bc3de2075ce1',
+  telegramAuth: 'https://functions.poehali.dev/328874f8-4242-460a-8d61-835f46269ef6',
+  telegramLink: 'https://functions.poehali.dev/c247639b-2b59-4a6e-ab37-d2523b6aef2d',
+  telegramSendCode: 'https://functions.poehali.dev/bbb52152-3099-4367-9372-dab75f600c71',
+  telegramVerifyCode: 'https://functions.poehali.dev/17bada97-5b55-4581-80ec-982f2c707e7b'
 };
 
 export interface ApiError {
@@ -19,6 +23,7 @@ export interface User {
   word_count: number;
   exercises_remaining: number;
   daily_exercises_count: number;
+  telegram_id?: number;
 }
 
 export interface Word {
@@ -277,6 +282,68 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.error || 'Failed to categorize words');
+    }
+
+    return await response.json();
+  }
+
+  async telegramAuth(telegramData: any): Promise<{ user: User; token: string }> {
+    const response = await fetch(API_URLS.telegramAuth, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(telegramData),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Telegram authentication failed');
+    }
+
+    const data = await response.json();
+    this.setAuth(data.user.id, data.token);
+    return data;
+  }
+
+  async telegramLinkAccount(telegramData: any): Promise<{ message: string; telegram_id: number }> {
+    const response = await fetch(API_URLS.telegramLink, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify(telegramData),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to link Telegram account');
+    }
+
+    return await response.json();
+  }
+
+  async sendRecoveryCode(email: string): Promise<{ message: string }> {
+    const response = await fetch(API_URLS.telegramSendCode, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to send recovery code');
+    }
+
+    return await response.json();
+  }
+
+  async verifyRecoveryCode(email: string, code: string, newPassword: string): Promise<{ message: string }> {
+    const response = await fetch(API_URLS.telegramVerifyCode, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, new_password: newPassword }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to verify code');
     }
 
     return await response.json();

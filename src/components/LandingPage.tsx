@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { LEARNING_TOPICS } from '@/data/topics';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
+import TelegramLoginButton from './TelegramLoginButton';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
@@ -18,6 +20,7 @@ interface LandingPageProps {
 const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showModeDialog, setShowModeDialog] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +28,32 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [phone, setPhone] = useState('');
   const [selectedPreferences, setSelectedPreferences] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryStep, setRecoveryStep] = useState<'email' | 'code'>('email');
   const { toast } = useToast();
+
+  const handleTelegramAuth = async (telegramUser: any) => {
+    setIsLoading(true);
+    try {
+      const { user, token } = await apiClient.telegramAuth(telegramUser);
+      localStorage.setItem('auth_token', token);
+      onLogin(user);
+      toast({
+        title: 'Вход выполнен!',
+        description: `Добро пожаловать, ${user.name}! 🚀`
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось войти через Telegram',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +91,52 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       toast({
         title: 'Ошибка',
         description: error instanceof Error ? error.message : 'Произошла ошибка',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendRecoveryCode = async () => {
+    if (!recoveryEmail) return;
+    setIsLoading(true);
+    try {
+      await apiClient.sendRecoveryCode(recoveryEmail);
+      setRecoveryStep('code');
+      toast({
+        title: 'Код отправлен!',
+        description: 'Проверьте Telegram — код придет в личные сообщения бота'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось отправить код',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!recoveryEmail || !recoveryCode || !newPassword) return;
+    setIsLoading(true);
+    try {
+      await apiClient.verifyRecoveryCode(recoveryEmail, recoveryCode, newPassword);
+      setShowForgotPassword(false);
+      setRecoveryStep('email');
+      setRecoveryEmail('');
+      setRecoveryCode('');
+      setNewPassword('');
+      toast({
+        title: 'Пароль изменен!',
+        description: 'Теперь вы можете войти с новым паролем'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось сбросить пароль',
         variant: 'destructive'
       });
     } finally {
@@ -427,7 +501,24 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
             </Button>
           </form>
 
-          <div className="text-center">
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Или</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <TelegramLoginButton
+              botName="ShagToSpeakBot"
+              onAuth={handleTelegramAuth}
+              buttonSize="large"
+            />
+          </div>
+
+          <div className="text-center space-y-2">
             <button
               type="button"
               onClick={() => {
@@ -438,10 +529,22 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                 setPhone('');
                 setSelectedPreferences([]);
               }}
-              className="text-sm text-primary hover:underline"
+              className="text-sm text-primary hover:underline block w-full"
             >
               {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
             </button>
+            {!isRegister && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAuthDialog(false);
+                  setShowForgotPassword(true);
+                }}
+                className="text-sm text-muted-foreground hover:text-primary block w-full"
+              >
+                Забыли пароль?
+              </button>
+            )}
           </div>
 
           {isRegister && (
@@ -451,6 +554,93 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
                 <p className="text-sm text-muted-foreground">
                   <strong>Бесплатный тариф:</strong> 3 упражнения в день, максимум 50 слов
                 </p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl">Восстановление пароля</DialogTitle>
+            <DialogDescription>
+              {recoveryStep === 'email' 
+                ? 'Введите email для получения кода восстановления в Telegram'
+                : 'Введите код из Telegram и новый пароль'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {recoveryStep === 'email' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recovery-email">Email</Label>
+                <Input
+                  id="recovery-email"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                />
+              </div>
+
+              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
+                <Icon name="Info" size={16} className="inline mr-2" />
+                Код придет в личные сообщения Telegram бота
+              </div>
+
+              <Button
+                onClick={handleSendRecoveryCode}
+                className="w-full"
+                disabled={isLoading || !recoveryEmail}
+              >
+                {isLoading ? 'Отправка...' : 'Отправить код'}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recovery-code">Код из Telegram</Label>
+                <Input
+                  id="recovery-code"
+                  type="text"
+                  placeholder="123456"
+                  value={recoveryCode}
+                  onChange={(e) => setRecoveryCode(e.target.value)}
+                  maxLength={6}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-password">Новый пароль</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setRecoveryStep('email');
+                    setRecoveryCode('');
+                    setNewPassword('');
+                  }}
+                  className="flex-1"
+                >
+                  Назад
+                </Button>
+                <Button
+                  onClick={handleVerifyCode}
+                  className="flex-1"
+                  disabled={isLoading || !recoveryCode || !newPassword}
+                >
+                  {isLoading ? 'Проверка...' : 'Сбросить пароль'}
+                </Button>
               </div>
             </div>
           )}

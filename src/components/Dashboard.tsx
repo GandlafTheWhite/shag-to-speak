@@ -9,6 +9,7 @@ import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
+import TelegramLinkBanner from './TelegramLinkBanner';
 
 interface DashboardProps {
   user: User;
@@ -86,6 +87,8 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
       </header>
 
       <main className="container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
+        <TelegramLinkBanner user={user} onUpdate={updateUser} />
+        
         <div className="text-center mb-12 relative">
           <h2 className="text-4xl font-display font-bold text-foreground mb-4">
             Добро пожаловать, {user.name}! 🌟
