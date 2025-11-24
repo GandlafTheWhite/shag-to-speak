@@ -83,10 +83,7 @@ const AddWordDialogs = ({
 
       <Dialog open={isAiDialogOpen} onOpenChange={setIsAiDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="secondary" className="flex-1 md:flex-none">
-            <Icon name="Sparkles" size={18} className="mr-2" />
-            Попросить ИИ
-          </Button>
+          <Button variant="secondary" className="flex-1 md:flex-none">Сгенерировать 15 слов</Button>
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
