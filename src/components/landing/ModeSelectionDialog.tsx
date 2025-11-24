@@ -38,7 +38,7 @@ const ModeSelectionDialog = ({
             </div>
             <div className="flex justify-center">
               <TelegramLoginButton
-                botName="shag_to_speak_bot"
+                botName="ShagToSpeak_bot"
                 onAuth={onTelegramAuth}
                 buttonSize="large"
               />
