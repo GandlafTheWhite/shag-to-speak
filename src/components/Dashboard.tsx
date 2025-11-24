@@ -169,62 +169,98 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </Card>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => onNavigate('learn')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                  <Icon name="BookOpen" size={24} className="text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="font-display">Учить слова</CardTitle>
-                  <CardDescription>Выполните упражнения</CardDescription>
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <button
+            onClick={() => onNavigate('learn')}
+            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl"
+          >
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 via-indigo-400 to-purple-400 animate-spin-slow"></div>
+              <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-background via-card to-background flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="absolute top-1/4 w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-400"></div>
+                  <div className="absolute bottom-1/4 w-7 h-7 rounded-full bg-gradient-to-tr from-purple-400 to-blue-400"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon name="BookOpen" size={32} className="text-primary group-hover:scale-110 transition-transform" />
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-          </Card>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+            </div>
+            <div className="text-center">
+              <h3 className="font-display font-semibold text-lg mb-1">Учить слова</h3>
+              <p className="text-sm text-muted-foreground">Выполните упражнения</p>
+            </div>
+          </button>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => onNavigate('words')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                  <Icon name="Library" size={24} className="text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="font-display">Мой словарь</CardTitle>
-                  <CardDescription>Управление словами</CardDescription>
+          <button
+            onClick={() => onNavigate('words')}
+            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl"
+          >
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-400 animate-spin-slow"></div>
+              <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-background via-card to-background flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="absolute top-1/4 w-7 h-7 rounded-full bg-gradient-to-br from-emerald-400 to-teal-400"></div>
+                  <div className="absolute bottom-1/4 w-7 h-7 rounded-full bg-gradient-to-tr from-cyan-400 to-emerald-400"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon name="Library" size={32} className="text-primary group-hover:scale-110 transition-transform" />
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-          </Card>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+            </div>
+            <div className="text-center">
+              <h3 className="font-display font-semibold text-lg mb-1">Мой словарь</h3>
+              <p className="text-sm text-muted-foreground">Управление словами</p>
+            </div>
+          </button>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => onNavigate('progress')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                  <Icon name="TrendingUp" size={24} className="text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="font-display">Мои успехи</CardTitle>
-                  <CardDescription>Статистика прогресса</CardDescription>
+          <button
+            onClick={() => onNavigate('progress')}
+            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl"
+          >
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400 via-orange-400 to-red-400 animate-spin-slow"></div>
+              <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-background via-card to-background flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="absolute top-1/4 w-7 h-7 rounded-full bg-gradient-to-br from-amber-400 to-orange-400"></div>
+                  <div className="absolute bottom-1/4 w-7 h-7 rounded-full bg-gradient-to-tr from-red-400 to-amber-400"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon name="TrendingUp" size={32} className="text-primary group-hover:scale-110 transition-transform" />
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-          </Card>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+            </div>
+            <div className="text-center">
+              <h3 className="font-display font-semibold text-lg mb-1">Мои успехи</h3>
+              <p className="text-sm text-muted-foreground">Статистика прогресса</p>
+            </div>
+          </button>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer group" onClick={() => onNavigate('help')}>
-            <CardHeader>
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
-                  <Icon name="HelpCircle" size={24} className="text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="font-display">Помощь</CardTitle>
-                  <CardDescription>FAQ и поддержка</CardDescription>
+          <button
+            onClick={() => onNavigate('help')}
+            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-xl"
+          >
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-400 via-rose-400 to-fuchsia-400 animate-spin-slow"></div>
+              <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-background via-card to-background flex items-center justify-center">
+                <div className="relative w-full h-full flex items-center justify-center">
+                  <div className="absolute top-1/4 w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-rose-400"></div>
+                  <div className="absolute bottom-1/4 w-7 h-7 rounded-full bg-gradient-to-tr from-fuchsia-400 to-pink-400"></div>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Icon name="HelpCircle" size={32} className="text-primary group-hover:scale-110 transition-transform" />
+                  </div>
                 </div>
               </div>
-            </CardHeader>
-          </Card>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-pink-400 via-rose-400 to-fuchsia-400 opacity-0 group-hover:opacity-20 blur-xl transition-opacity"></div>
+            </div>
+            <div className="text-center">
+              <h3 className="font-display font-semibold text-lg mb-1">Помощь</h3>
+              <p className="text-sm text-muted-foreground">FAQ и поддержка</p>
+            </div>
+          </button>
         </div>
 
         <div className="mt-8 p-6 bg-accent/50 rounded-lg border">
