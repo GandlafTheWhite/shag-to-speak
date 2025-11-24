@@ -1,17 +1,11 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
-import { LEARNING_TOPICS } from '@/data/topics';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
-import TelegramLoginButton from './TelegramLoginButton';
+import LandingPageContent from './landing/LandingPageContent';
+import ModeSelectionDialog from './landing/ModeSelectionDialog';
+import AuthDialog from './landing/AuthDialog';
+import ForgotPasswordDialog from './landing/ForgotPasswordDialog';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
@@ -144,8 +138,6 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
     }
   };
 
-
-
   const togglePreference = (prefId: string) => {
     setSelectedPreferences(prev => 
       prev.includes(prefId) 
@@ -154,498 +146,85 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
     );
   };
 
-  const features = [
-    {
-      icon: 'Brain',
-      title: 'AI-генерация контента',
-      description: 'Автоматическое создание переводов и примеров для каждого слова'
-    },
-    {
-      icon: 'Target',
-      title: 'Персонализация',
-      description: 'Выбирайте темы для изучения — система адаптируется под ваши интересы'
-    },
-    {
-      icon: 'Zap',
-      title: 'Разнообразные упражнения',
-      description: 'Перевод, множественный выбор, синонимы и составление предложений'
-    },
-    {
-      icon: 'TrendingUp',
-      title: 'Отслеживание прогресса',
-      description: 'Наглядная статистика и визуализация вашего пути к знанию языка'
-    },
-    {
-      icon: 'Heart',
-      title: 'Философия пути',
-      description: 'Регулярность важнее интенсивности — наслаждайтесь процессом'
-    },
-    {
-      icon: 'Download',
-      title: 'Экспорт данных',
-      description: 'Скачивайте словарь в Excel для использования где угодно'
-    }
-  ];
+  const handleToggleAuthMode = () => {
+    setIsRegister(!isRegister);
+    setEmail('');
+    setPassword('');
+    setName('');
+    setPhone('');
+    setSelectedPreferences([]);
+  };
+
+  const handleShowForgotPassword = () => {
+    setShowAuthDialog(false);
+    setShowForgotPassword(true);
+  };
+
+  const handleBackToEmail = () => {
+    setRecoveryStep('email');
+    setRecoveryCode('');
+    setNewPassword('');
+  };
+
+  const handleSelectRegister = () => {
+    setShowModeDialog(false);
+    setIsRegister(true);
+    setShowAuthDialog(true);
+  };
+
+  const handleSelectLogin = () => {
+    setShowModeDialog(false);
+    setIsRegister(false);
+    setShowAuthDialog(true);
+  };
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/10 to-background z-0"></div>
-        
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
-            <div className="text-center md:text-left opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
-              <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full backdrop-blur-sm">
-                <span className="text-primary font-medium text-sm">Путь важнее цели ✨</span>
-              </div>
-              
-              <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-                ShagToSpeak
-              </h1>
-              
-              <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
-                Изучайте английский шаг за шагом. Добавляйте слова, выполняйте упражнения и наслаждайтесь процессом.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                <Button 
-                  size="lg" 
-                  className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 transform"
-                  onClick={() => setShowModeDialog(true)}
-                >
-                  Начать бесплатно
-                  <Icon name="ArrowRight" size={20} className="ml-2" />
-                </Button>
-              </div>
+      <LandingPageContent onShowModeDialog={() => setShowModeDialog(true)} />
+      
+      <ModeSelectionDialog
+        open={showModeDialog}
+        onOpenChange={setShowModeDialog}
+        onSelectRegister={handleSelectRegister}
+        onSelectLogin={handleSelectLogin}
+      />
 
-              <div className="mt-8 flex items-center gap-6 justify-center md:justify-start text-sm text-muted-foreground">
-                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                  <Icon name="Check" size={18} className="text-green-500" />
-                  <span>Бесплатно</span>
-                </div>
-                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                  <Icon name="Check" size={18} className="text-green-500" />
-                  <span>Без карты</span>
-                </div>
-                <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                  <Icon name="Check" size={18} className="text-green-500" />
-                  <span>50 слов</span>
-                </div>
-              </div>
-            </div>
+      <AuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        isRegister={isRegister}
+        email={email}
+        setEmail={setEmail}
+        password={password}
+        setPassword={setPassword}
+        name={name}
+        setName={setName}
+        phone={phone}
+        setPhone={setPhone}
+        selectedPreferences={selectedPreferences}
+        togglePreference={togglePreference}
+        isLoading={isLoading}
+        onSubmit={handleSubmit}
+        onTelegramAuth={handleTelegramAuth}
+        onToggleMode={handleToggleAuthMode}
+        onShowForgotPassword={handleShowForgotPassword}
+      />
 
-            <div className="relative opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] hidden md:block">
-              <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-cyan-50 to-emerald-50 flex items-center justify-center transition-transform hover:scale-105 duration-500">
-                <img 
-                  src="https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/28f73409-8d94-4085-b102-3b333ea7590b.jpg" 
-                  alt="Learning Journey Path with Nature" 
-                  className="w-full h-full object-cover rounded-3xl"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-accent/30">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Почему ShagToSpeak?
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Мы создали инструмент, который делает изучение английского приятным и эффективным
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, idx) => (
-              <Card 
-                key={idx} 
-                className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-2 opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards] hover:border-primary/50 group"
-                style={{ animationDelay: `${0.2 + idx * 0.1}s` }}
-              >
-                <CardHeader>
-                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors group-hover:scale-110 duration-300">
-                    <Icon name={feature.icon as any} size={28} className="text-primary" />
-                  </div>
-                  <CardTitle className="font-display text-xl mb-2">{feature.title}</CardTitle>
-                  <CardDescription className="text-base">{feature.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
-              Как это работает
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Три простых шага к изучению английского
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 z-0 opacity-0 animate-[fadeIn_1s_ease-out_0.5s_forwards]"></div>
-            
-            {[
-              {
-                step: '01',
-                title: 'Добавьте слова',
-                description: 'Вводите слова вручную или выбирайте готовые наборы по темам',
-                icon: 'Plus'
-              },
-              {
-                step: '02',
-                title: 'Выполняйте упражнения',
-                description: 'Разнообразные задания помогут запомнить слова навсегда',
-                icon: 'BookOpen'
-              },
-              {
-                step: '03',
-                title: 'Отслеживайте прогресс',
-                description: 'Смотрите статистику и наслаждайтесь своим ростом',
-                icon: 'LineChart'
-              }
-            ].map((step, idx) => (
-              <Card 
-                key={idx} 
-                className="relative z-10 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 opacity-0 animate-[fadeInUp_0.6s_ease-out_forwards] group hover:border-primary/50"
-                style={{ animationDelay: `${0.3 + idx * 0.15}s` }}
-              >
-                <CardHeader>
-                  <div className="mx-auto w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    {step.step}
-                  </div>
-                  <CardTitle className="font-display text-2xl mb-3">{step.title}</CardTitle>
-                  <CardDescription className="text-base">{step.description}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/10 via-accent/20 to-background">
-        <div className="container mx-auto px-4 max-w-4xl text-center opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.2s]">
-          <h2 className="text-4xl md:text-5xl font-display font-bold mb-6">
-            Начните свой путь сегодня
-          </h2>
-          
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Бесплатный тариф включает 50 слов и 3 упражнения в день — более чем достаточно, чтобы начать
-          </p>
-          
-          <Button 
-            size="lg" 
-            className="text-xl px-12 py-8 shadow-xl hover:shadow-2xl transition-all hover:scale-110 transform animate-pulse hover:animate-none"
-            onClick={() => setShowModeDialog(true)}
-          >
-            Попробовать бесплатно
-            <Icon name="Rocket" size={24} className="ml-3" />
-          </Button>
-
-          <p className="mt-6 text-sm text-muted-foreground">
-            Уже есть аккаунт?{' '}
-            <button 
-              className="text-primary hover:underline font-medium"
-              onClick={() => setShowModeDialog(true)}
-            >
-              Войти
-            </button>
-          </p>
-        </div>
-      </section>
-
-      {/* Mode Selection Dialog */}
-      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-display text-center">Начать изучение</DialogTitle>
-            <DialogDescription className="text-center">
-              Выберите действие
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 mt-4">
-            <Button
-              size="lg"
-              className="w-full text-lg py-6"
-              onClick={() => {
-                setShowModeDialog(false);
-                setIsRegister(true);
-                setShowAuthDialog(true);
-              }}
-            >
-              <Icon name="UserPlus" size={20} className="mr-2" />
-              Регистрация
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full text-lg py-6"
-              onClick={() => {
-                setShowModeDialog(false);
-                setIsRegister(false);
-                setShowAuthDialog(true);
-              }}
-            >
-              <Icon name="LogIn" size={20} className="mr-2" />
-              Вход
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Auth Dialog */}
-      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">
-              {isRegister ? 'Регистрация' : 'Вход'}
-            </DialogTitle>
-            <DialogDescription>
-              {isRegister ? 'Создайте аккаунт для начала изучения' : 'Войдите в свой аккаунт'}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegister && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Имя</Label>
-                <Input 
-                  id="name" 
-                  type="text" 
-                  placeholder="Ваше имя" 
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="email@example.com" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-
-            {isRegister && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center gap-2">
-                    Номер телефона 
-                    <span className="text-xs text-muted-foreground font-normal">(необязательно)</span>
-                  </Label>
-                  <Input 
-                    id="phone" 
-                    type="tel" 
-                    placeholder="+7 (999) 123-45-67" 
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <Label className="text-base">Выберите темы для изучения</Label>
-                  <div className="grid grid-cols-1 gap-3 max-h-64 overflow-y-auto p-1 border rounded-lg">
-                    {LEARNING_TOPICS.map((topic) => (
-                      <div key={topic.id} className="flex items-start space-x-3 p-2 hover:bg-accent/50 rounded transition-colors">
-                        <Checkbox 
-                          id={topic.id}
-                          checked={selectedPreferences.includes(topic.id)}
-                          onCheckedChange={() => togglePreference(topic.id)}
-                          className="mt-1"
-                        />
-                        <label
-                          htmlFor={topic.id}
-                          className="flex-1 cursor-pointer"
-                        >
-                          <div className="font-medium text-sm">{topic.label}</div>
-                          <div className="text-xs text-muted-foreground">{topic.description}</div>
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-              {isLoading ? 'Загрузка...' : (isRegister ? 'Зарегистрироваться' : 'Войти')}
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Или</span>
-            </div>
-          </div>
-
-          <div className="flex justify-center">
-            <TelegramLoginButton
-              botName="ShagToSpeakBot"
-              onAuth={handleTelegramAuth}
-              buttonSize="large"
-            />
-          </div>
-
-          <div className="text-center space-y-2">
-            <button
-              type="button"
-              onClick={() => {
-                setIsRegister(!isRegister);
-                setEmail('');
-                setPassword('');
-                setName('');
-                setPhone('');
-                setSelectedPreferences([]);
-              }}
-              className="text-sm text-primary hover:underline block w-full"
-            >
-              {isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться'}
-            </button>
-            {!isRegister && (
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAuthDialog(false);
-                  setShowForgotPassword(true);
-                }}
-                className="text-sm text-muted-foreground hover:text-primary block w-full"
-              >
-                Забыли пароль?
-              </button>
-            )}
-          </div>
-
-          {isRegister && (
-            <div className="p-4 bg-accent rounded-lg">
-              <div className="flex items-start gap-2">
-                <Icon name="Info" size={20} className="text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-muted-foreground">
-                  <strong>Бесплатный тариф:</strong> 3 упражнения в день, максимум 50 слов
-                </p>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl">Восстановление пароля</DialogTitle>
-            <DialogDescription>
-              {recoveryStep === 'email' 
-                ? 'Введите email для получения кода восстановления в Telegram'
-                : 'Введите код из Telegram и новый пароль'}
-            </DialogDescription>
-          </DialogHeader>
-
-          {recoveryStep === 'email' ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="recovery-email">Email</Label>
-                <Input
-                  id="recovery-email"
-                  type="email"
-                  placeholder="email@example.com"
-                  value={recoveryEmail}
-                  onChange={(e) => setRecoveryEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg text-sm">
-                <Icon name="Info" size={16} className="inline mr-2" />
-                Код придет в личные сообщения Telegram бота
-              </div>
-
-              <Button
-                onClick={handleSendRecoveryCode}
-                className="w-full"
-                disabled={isLoading || !recoveryEmail}
-              >
-                {isLoading ? 'Отправка...' : 'Отправить код'}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="recovery-code">Код из Telegram</Label>
-                <Input
-                  id="recovery-code"
-                  type="text"
-                  placeholder="123456"
-                  value={recoveryCode}
-                  onChange={(e) => setRecoveryCode(e.target.value)}
-                  maxLength={6}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="new-password">Новый пароль</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setRecoveryStep('email');
-                    setRecoveryCode('');
-                    setNewPassword('');
-                  }}
-                  className="flex-1"
-                >
-                  Назад
-                </Button>
-                <Button
-                  onClick={handleVerifyCode}
-                  className="flex-1"
-                  disabled={isLoading || !recoveryCode || !newPassword}
-                >
-                  {isLoading ? 'Проверка...' : 'Сбросить пароль'}
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ForgotPasswordDialog
+        open={showForgotPassword}
+        onOpenChange={setShowForgotPassword}
+        recoveryStep={recoveryStep}
+        recoveryEmail={recoveryEmail}
+        setRecoveryEmail={setRecoveryEmail}
+        recoveryCode={recoveryCode}
+        setRecoveryCode={setRecoveryCode}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        isLoading={isLoading}
+        onSendCode={handleSendRecoveryCode}
+        onVerifyCode={handleVerifyCode}
+        onBack={handleBackToEmail}
+      />
     </div>
   );
 };
