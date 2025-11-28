@@ -72,6 +72,86 @@ def call_ai_api(prompt: str, system_message: str = None) -> Dict[str, Any]:
     except Exception as e:
         return {'error': str(e)}
 
+def generate_word_metadata_inline(english_word: str) -> Dict[str, str]:
+    """Generate metadata for a word using AI API (inline during exercise generation)"""
+    api_key = os.environ.get('GENAPI_KEY')
+    if not api_key:
+        return {
+            'transcription': '',
+            'part_of_speech': 'noun',
+            'difficulty_level': 'intermediate',
+            'example_sentence': ''
+        }
+    
+    prompt = f"""Analyze "{english_word}". Return JSON:
+{{"transcription": "IPA", "part_of_speech": "noun/verb/adj/adv", "difficulty_level": "beginner/intermediate/advanced/master", "example_sentence": "short sentence"}}
+
+Rules:
+- transcription: IPA format /wɜːrd/
+- part_of_speech: most common usage
+- difficulty_level: beginner(A1-A2), intermediate(B1-B2), advanced(C1), master(C2)
+- example_sentence: 10-15 words max
+
+Return ONLY JSON, no extra text."""
+
+    try:
+        response = requests.post(
+            'https://api.vsegpt.ru/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {api_key}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'openai/gpt-4o-mini',
+                'messages': [
+                    {'role': 'system', 'content': 'You are a linguistics expert. Respond only with valid JSON.'},
+                    {'role': 'user', 'content': prompt}
+                ],
+                'temperature': 0.3,
+                'max_tokens': 200
+            },
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            content = data['choices'][0]['message']['content'].strip()
+            
+            if content.startswith('```json'):
+                content = content[7:]
+            if content.startswith('```'):
+                content = content[3:]
+            if content.endswith('```'):
+                content = content[:-3]
+            content = content.strip()
+            
+            metadata = json.loads(content)
+            
+            valid_pos = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction', 'interjection']
+            if metadata.get('part_of_speech') not in valid_pos:
+                metadata['part_of_speech'] = 'noun'
+            
+            valid_levels = ['beginner', 'intermediate', 'advanced', 'master']
+            if metadata.get('difficulty_level') not in valid_levels:
+                metadata['difficulty_level'] = 'intermediate'
+            
+            return {
+                'transcription': metadata.get('transcription', ''),
+                'part_of_speech': metadata['part_of_speech'],
+                'difficulty_level': metadata['difficulty_level'],
+                'example_sentence': metadata.get('example_sentence', '')
+            }
+    
+    except Exception as e:
+        print(f'Metadata generation error: {e}')
+    
+    return {
+        'transcription': '',
+        'part_of_speech': 'noun',
+        'difficulty_level': 'intermediate',
+        'example_sentence': ''
+    }
+
 def generate_synonym_antonym(word: Dict[str, Any]) -> Dict[str, Any]:
     """Generate synonym/antonym exercise using AI"""
     prompt = f"""For the English word "{word['english_word']}" (Russian: {word['russian_translation']}):
@@ -105,7 +185,31 @@ Return JSON:
     }
 
 def generate_fill_blank(word: Dict[str, Any]) -> Dict[str, Any]:
-    """Generate fill-in-the-blank exercise using AI"""
+    """Generate fill-in-the-blank exercise using AI or example_sentence"""
+    example = word.get('example_sentence')
+    
+    if example and word['english_word'].lower() in example.lower():
+        sentence_with_blank = example.replace(word['english_word'], '___').replace(word['english_word'].lower(), '___').replace(word['english_word'].capitalize(), '___')
+        
+        prompt = f"""For the word "{word['english_word']}", provide 3 INCORRECT alternative words that could fit grammatically but are wrong contextually.
+
+Return JSON:
+{{"options": ["wrong1", "wrong2", "wrong3"]}}"""
+        
+        ai_result = call_ai_api(prompt, 'You are creating distractors for fill-in-the-blank exercises.')
+        
+        if 'error' not in ai_result and 'options' in ai_result:
+            all_options = [word['english_word']] + ai_result['options']
+            random.shuffle(all_options)
+            
+            return {
+                'word_id': word['id'],
+                'type': 'fill_blank',
+                'question': f"Fill in the blank: {sentence_with_blank}",
+                'options': all_options,
+                'correct_answer': word['english_word']
+            }
+    
     prompt = f"""Create a sentence with a blank where the word "{word['english_word']}" should go.
 Also provide 3 incorrect word options.
 
@@ -318,7 +422,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             query = """SELECT id, english_word, russian_translation, category, 
-                              transcription, part_of_speech, example_sentence
+                              transcription, part_of_speech, example_sentence, difficulty_level
                        FROM words 
                        WHERE user_id = %s AND status = 'learning'"""
             params = [user_id]
@@ -331,6 +435,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(query, params)
             words = cursor.fetchall()
+            
+            for word in words:
+                if not word.get('transcription') or not word.get('part_of_speech'):
+                    metadata = generate_word_metadata_inline(word['english_word'])
+                    cursor.execute("""
+                        UPDATE words 
+                        SET transcription = %s,
+                            part_of_speech = %s,
+                            difficulty_level = %s,
+                            example_sentence = %s
+                        WHERE id = %s
+                    """, (
+                        metadata['transcription'],
+                        metadata['part_of_speech'],
+                        metadata['difficulty_level'],
+                        metadata.get('example_sentence', word.get('example_sentence')),
+                        word['id']
+                    ))
+                    word['transcription'] = metadata['transcription']
+                    word['part_of_speech'] = metadata['part_of_speech']
+                    word['difficulty_level'] = metadata['difficulty_level']
+                    word['example_sentence'] = metadata.get('example_sentence', word.get('example_sentence'))
+            
+            conn.commit()
             
             if not words:
                 return {

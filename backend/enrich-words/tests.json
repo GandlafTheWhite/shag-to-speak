@@ -1,0 +1,40 @@
+{
+  "tests": [
+    {
+      "name": "Get words needing enrichment",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "words": "array",
+        "count": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Enrich word with metadata",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "word_id": 1
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "word": {
+          "id": "number",
+          "english_word": "string",
+          "transcription": "string",
+          "part_of_speech": "string",
+          "difficulty_level": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

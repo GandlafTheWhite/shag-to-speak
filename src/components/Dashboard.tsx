@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import TelegramLinkBanner from './TelegramLinkBanner';
 import StreakCounter from './gamification/StreakCounter';
 import PointsDisplay from './gamification/PointsDisplay';
+import WordEnrichmentProgress from './WordEnrichmentProgress';
 
 interface DashboardProps {
   user: User;
@@ -90,6 +91,12 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
 
       <main className="container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
         <TelegramLinkBanner user={user} onUpdate={updateUser} />
+        
+        {user.word_count > 0 && (
+          <div className="mb-8">
+            <WordEnrichmentProgress />
+          </div>
+        )}
         
         <div className="text-center mb-12 relative">
           <h2 className="text-4xl font-display font-bold text-foreground mb-4">

@@ -8,7 +8,8 @@ const API_URLS = {
   completeProfile: 'https://functions.poehali.dev/d7a51546-f81a-49bc-8dec-0e1026b78fe5',
   telegramLink: 'https://functions.poehali.dev/c2111525-7f03-404a-8a73-22afb051c82f',
   exerciseCategories: 'https://functions.poehali.dev/2cb6dda2-5dee-4cc0-afe0-67993e14943d',
-  settings: 'https://functions.poehali.dev/988818e5-d5bb-4ef3-8d05-bd6be60b40a0'
+  settings: 'https://functions.poehali.dev/988818e5-d5bb-4ef3-8d05-bd6be60b40a0',
+  enrichWords: 'https://functions.poehali.dev/5c93fe2a-0fff-4db2-9d06-24cd6af4f983'
 };
 
 export interface ApiError {
@@ -404,6 +405,36 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.error || 'Failed to update settings');
+    }
+
+    return await response.json();
+  }
+
+  async enrichWord(wordId: number): Promise<Word> {
+    const response = await fetch(API_URLS.enrichWords, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ word_id: wordId }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to enrich word');
+    }
+
+    const data = await response.json();
+    return data.word;
+  }
+
+  async getWordsNeedingEnrichment(): Promise<{ words: Array<{ id: number; english_word: string }>; count: number }> {
+    const response = await fetch(API_URLS.enrichWords, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to get words needing enrichment');
     }
 
     return await response.json();
