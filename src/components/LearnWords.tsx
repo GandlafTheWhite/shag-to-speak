@@ -213,8 +213,14 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
             disabled={isLoadingCategories}
             className="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-blue-500/50">
-              <Icon name="Brain" size={40} className="text-white" />
+            <div className="relative w-24 h-24">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 animate-pulse opacity-20"></div>
+              
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg group-hover:shadow-blue-500/50 animate-float">
+                <Icon name="Brain" size={40} className="text-white animate-pulse-slow" />
+              </div>
+              
+              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 opacity-0 group-hover:opacity-30 blur-xl transition-opacity animate-spin-slow"></div>
             </div>
             <div className="text-center">
               <h3 className="font-display font-semibold text-xl mb-2">Умное изучение слов</h3>
