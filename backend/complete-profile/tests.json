@@ -1,0 +1,41 @@
+{
+  "tests": [
+    {
+      "name": "Complete profile with all fields",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+79991234567",
+        "preferences": ["business", "travel"]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "name": "string",
+          "profile_completed": "boolean"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Complete profile with required fields only",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "name": "Jane Smith"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "name": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

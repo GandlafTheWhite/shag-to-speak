@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Link Telegram account with valid code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "code": "ABC123"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "telegram_id": "number"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Fail with missing parameters",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

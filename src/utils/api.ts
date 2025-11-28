@@ -4,7 +4,9 @@ const API_URLS = {
   exercises: 'https://functions.poehali.dev/dab10f03-8dd4-4dc3-af8d-0cb6fd69aeb7',
   stats: 'https://functions.poehali.dev/5e32e154-08b5-4bdf-b5dd-bc3de2075ce1',
   telegramBotAuth: 'https://functions.poehali.dev/11cbde8f-4051-4ebf-8487-67996dc71ef3',
-  telegramWebhook: 'https://functions.poehali.dev/e09a4bc7-f64b-4892-8115-71c6adc8bd2c'
+  telegramWebhook: 'https://functions.poehali.dev/e09a4bc7-f64b-4892-8115-71c6adc8bd2c',
+  completeProfile: 'https://functions.poehali.dev/d7a51546-f81a-49bc-8dec-0e1026b78fe5',
+  telegramLink: 'https://functions.poehali.dev/c2111525-7f03-404a-8a73-22afb051c82f'
 };
 
 export interface ApiError {
@@ -22,6 +24,7 @@ export interface User {
   exercises_remaining: number;
   daily_exercises_count: number;
   telegram_id?: number;
+  profile_completed?: boolean;
 }
 
 export interface Word {
@@ -300,6 +303,48 @@ class ApiClient {
     const data = await response.json();
     this.setAuth(data.user.id, data.token);
     return data;
+  }
+
+  async completeProfile(
+    userId: number,
+    data: { name: string; email: string; phone: string; preferences: string[] }
+  ): Promise<{ user: User }> {
+    const response = await fetch(API_URLS.completeProfile, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({
+        user_id: userId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        preferences: data.preferences
+      }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to complete profile');
+    }
+
+    return await response.json();
+  }
+
+  async linkTelegram(userId: number, code: string): Promise<{ user: User }> {
+    const response = await fetch(API_URLS.telegramLink, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({
+        user_id: userId,
+        code
+      }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to link Telegram');
+    }
+
+    return await response.json();
   }
 }
 
