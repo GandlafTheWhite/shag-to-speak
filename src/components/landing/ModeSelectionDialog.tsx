@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
-import TelegramLoginButton from '../TelegramLoginButton';
+
 
 interface ModeSelectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelectRegister: () => void;
   onSelectLogin: () => void;
-  onTelegramAuth: (telegramUser: any) => void;
+  onTelegramAuth: () => void;
 }
 
 const ModeSelectionDialog = ({ 
@@ -36,13 +36,14 @@ const ModeSelectionDialog = ({
               </div>
               <p className="text-sm text-muted-foreground">Вход в один клик через Telegram</p>
             </div>
-            <div className="flex justify-center">
-              <TelegramLoginButton
-                botName="ShagToSpeak_bot"
-                onAuth={onTelegramAuth}
-                buttonSize="large"
-              />
-            </div>
+            <Button
+              size="lg"
+              className="w-full"
+              onClick={onTelegramAuth}
+            >
+              <Icon name="Send" size={20} className="mr-2" />
+              Войти через Telegram
+            </Button>
           </div>
 
           <div className="relative my-2">

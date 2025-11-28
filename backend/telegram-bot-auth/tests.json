@@ -1,16 +1,12 @@
 {
   "tests": [
     {
-      "name": "Test OPTIONS request for CORS",
-      "method": "OPTIONS",
-      "path": "/",
-      "expectedStatus": 200
-    },
-    {
-      "name": "Test missing email",
+      "name": "Test login with invalid code",
       "method": "POST",
       "path": "/",
-      "body": {},
+      "body": {
+        "code": "INVALID"
+      },
       "expectedStatus": 400,
       "expectedBody": {
         "error": "string"

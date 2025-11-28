@@ -1,19 +1,20 @@
 import json
 import os
 import hashlib
-import hmac
+from datetime import datetime
 from typing import Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import requests
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Authenticate or register user via Telegram Login Widget
-    Args: event with httpMethod, body (telegram auth data)
+    Business: Authenticate or register user via Telegram bot code
+    Args: event with httpMethod, body (telegram_id, code)
           context with request_id
     Returns: HTTP response with user data and auth token
     '''
-    method: str = event.get('httpMethod', 'GET')
+    method: str = event.get('httpMethod', 'POST')
     
     if method == 'OPTIONS':
         return {
@@ -38,47 +39,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     try:
         body_data = json.loads(event.get('body', '{}'))
+        code = body_data.get('code', '').strip().upper()
         
-        telegram_id = body_data.get('id')
-        username = body_data.get('username', '')
-        first_name = body_data.get('first_name', '')
-        photo_url = body_data.get('photo_url', '')
-        auth_date = body_data.get('auth_date')
-        hash_received = body_data.get('hash')
-        
-        if not telegram_id or not hash_received or not auth_date:
+        if not code:
             return {
                 'statusCode': 400,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Missing required Telegram auth data'}),
-                'isBase64Encoded': False
-            }
-        
-        bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
-        if not bot_token:
-            return {
-                'statusCode': 500,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Bot token not configured'}),
-                'isBase64Encoded': False
-            }
-        
-        data_check_arr = []
-        for key in ['auth_date', 'first_name', 'id', 'photo_url', 'username']:
-            if key in body_data and body_data[key]:
-                data_check_arr.append(f"{key}={body_data[key]}")
-        
-        data_check_arr.sort()
-        data_check_string = '\n'.join(data_check_arr)
-        
-        secret_key = hashlib.sha256(bot_token.encode()).digest()
-        hash_calculated = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
-        
-        if hash_calculated != hash_received:
-            return {
-                'statusCode': 403,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'error': 'Invalid Telegram authentication'}),
+                'body': json.dumps({'error': 'Code is required'}),
                 'isBase64Encoded': False
             }
         
@@ -87,34 +54,60 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         cur.execute(
+            """
+            SELECT * FROM auth_codes 
+            WHERE code = %s AND used = FALSE AND expires_at > NOW()
+            ORDER BY created_at DESC LIMIT 1
+            """,
+            (code,)
+        )
+        auth_code = cur.fetchone()
+        
+        if not auth_code:
+            cur.close()
+            conn.close()
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({'error': 'Неверный или истекший код'}),
+                'isBase64Encoded': False
+            }
+        
+        telegram_id = auth_code['telegram_id']
+        
+        cur.execute(
             "SELECT * FROM users WHERE telegram_id = %s",
             (telegram_id,)
         )
         user = cur.fetchone()
         
+        is_new_user = False
+        
         if user:
             cur.execute(
-                """
-                UPDATE users 
-                SET telegram_username = %s, telegram_first_name = %s, telegram_photo_url = %s
-                WHERE telegram_id = %s
-                """,
-                (username, first_name, photo_url, telegram_id)
+                "UPDATE users SET updated_at = NOW() WHERE telegram_id = %s",
+                (telegram_id,)
             )
             conn.commit()
         else:
-            name = first_name or username or f'User{telegram_id}'
+            is_new_user = True
+            name = f'User{telegram_id}'
             cur.execute(
                 """
-                INSERT INTO users (telegram_id, telegram_username, telegram_first_name, telegram_photo_url, 
-                                   name, email, password_hash, status, preferences, daily_exercises_count)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO users (telegram_id, name, email, password_hash, status, preferences, daily_exercises_count)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
                 """,
-                (telegram_id, username, first_name, photo_url, name, '', '', 'free', [], 3)
+                (telegram_id, name, '', '', 'free', [], 3)
             )
             user = cur.fetchone()
             conn.commit()
+        
+        cur.execute(
+            "UPDATE auth_codes SET used = TRUE WHERE id = %s",
+            (auth_code['id'],)
+        )
+        conn.commit()
         
         cur.execute("SELECT COUNT(*) as count FROM words WHERE user_id = %s", (user['id'],))
         word_count_result = cur.fetchone()
@@ -122,6 +115,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cur.close()
         conn.close()
+        
+        if is_new_user:
+            bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+            if bot_token:
+                welcome_message = (
+                    "🎉 Добро пожаловать в ShagToSpeak!\n\n"
+                    "Вы успешно зарегистрировались. Теперь вы можете пользоваться всеми функциями платформы.\n\n"
+                    "📱 Присоединяйтесь к нашему сообществу: https://t.me/+msaxjItr0iZmMGNi"
+                )
+                telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+                requests.post(telegram_url, json={
+                    'chat_id': telegram_id,
+                    'text': welcome_message,
+                    'parse_mode': 'HTML'
+                })
         
         token = hashlib.sha256(f"{user['id']}{telegram_id}{context.request_id}".encode()).hexdigest()
         

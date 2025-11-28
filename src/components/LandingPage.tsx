@@ -6,6 +6,7 @@ import LandingPageContent from './landing/LandingPageContent';
 import ModeSelectionDialog from './landing/ModeSelectionDialog';
 import AuthDialog from './landing/AuthDialog';
 import ForgotPasswordDialog from './landing/ForgotPasswordDialog';
+import TelegramAuthDialog from './landing/TelegramAuthDialog';
 
 interface LandingPageProps {
   onLogin: (user: User) => void;
@@ -15,6 +16,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showModeDialog, setShowModeDialog] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showTelegramAuth, setShowTelegramAuth] = useState(false);
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,12 +30,19 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
   const [recoveryStep, setRecoveryStep] = useState<'email' | 'code'>('email');
   const { toast } = useToast();
 
-  const handleTelegramAuth = async (telegramUser: any) => {
+  const handleOpenTelegramAuth = () => {
+    setShowModeDialog(false);
+    setShowAuthDialog(false);
+    setShowTelegramAuth(true);
+  };
+
+  const handleVerifyTelegramCode = async (code: string) => {
     setIsLoading(true);
     try {
-      const { user, token } = await apiClient.telegramAuth(telegramUser);
+      const { user, token } = await apiClient.telegramBotAuth(code);
       localStorage.setItem('auth_token', token);
       onLogin(user);
+      setShowTelegramAuth(false);
       toast({
         title: 'Вход выполнен!',
         description: `Добро пожаловать, ${user.name}! 🚀`
@@ -187,7 +196,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
         onOpenChange={setShowModeDialog}
         onSelectRegister={handleSelectRegister}
         onSelectLogin={handleSelectLogin}
-        onTelegramAuth={handleTelegramAuth}
+        onTelegramAuth={handleOpenTelegramAuth}
       />
 
       <AuthDialog
@@ -206,7 +215,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
         togglePreference={togglePreference}
         isLoading={isLoading}
         onSubmit={handleSubmit}
-        onTelegramAuth={handleTelegramAuth}
+        onTelegramAuth={handleOpenTelegramAuth}
         onToggleMode={handleToggleAuthMode}
         onShowForgotPassword={handleShowForgotPassword}
       />
@@ -225,6 +234,13 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
         onSendCode={handleSendRecoveryCode}
         onVerifyCode={handleVerifyCode}
         onBack={handleBackToEmail}
+      />
+
+      <TelegramAuthDialog
+        open={showTelegramAuth}
+        onOpenChange={setShowTelegramAuth}
+        onVerifyCode={handleVerifyTelegramCode}
+        isLoading={isLoading}
       />
     </div>
   );

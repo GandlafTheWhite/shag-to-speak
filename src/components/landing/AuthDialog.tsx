@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import Icon from '@/components/ui/icon';
-import TelegramLoginButton from '../TelegramLoginButton';
+
 import { LEARNING_TOPICS } from '@/data/topics';
 
 interface AuthDialogProps {
@@ -23,7 +23,7 @@ interface AuthDialogProps {
   togglePreference: (prefId: string) => void;
   isLoading: boolean;
   onSubmit: (e: React.FormEvent) => void;
-  onTelegramAuth: (telegramUser: any) => void;
+  onTelegramAuth: () => void;
   onToggleMode: () => void;
   onShowForgotPassword: () => void;
 }
@@ -154,13 +154,16 @@ const AuthDialog = ({
           </div>
         </div>
 
-        <div className="flex justify-center">
-          <TelegramLoginButton
-            botName="ShagToSpeak_bot"
-            onAuth={onTelegramAuth}
-            buttonSize="large"
-          />
-        </div>
+        <Button
+          type="button"
+          onClick={onTelegramAuth}
+          variant="outline"
+          size="lg"
+          className="w-full"
+        >
+          <Icon name="Send" size={20} className="mr-2" />
+          Войти через Telegram
+        </Button>
 
         <div className="text-center space-y-2">
           <button
