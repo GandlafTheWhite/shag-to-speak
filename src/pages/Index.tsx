@@ -6,6 +6,7 @@ import LearnWords from '@/components/LearnWords';
 import MyProgress from '@/components/MyProgress';
 import Help from '@/components/Help';
 import Settings from '@/components/Settings';
+import Achievements from '@/components/Achievements';
 import ProfileSetupWizard from '@/components/ProfileSetupWizard';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
@@ -20,11 +21,15 @@ export interface User {
   exercises_remaining: number;
   daily_exercises_count: number;
   profile_completed?: boolean;
+  exercise_difficulty?: 'beginner' | 'intermediate' | 'advanced' | 'master';
+  total_points?: number;
+  current_streak?: number;
+  longest_streak?: number;
 }
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements'>('landing');
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const { toast } = useToast();
@@ -229,6 +234,30 @@ const Index = () => {
               }
             }}
             updateUser={updateUserData}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
+      )}
+      {currentPage === 'achievements' && user && (
+        <>
+          <Achievements
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page);
+              }
+            }}
           />
           {showProfileSetup && (
             <ProfileSetupWizard 

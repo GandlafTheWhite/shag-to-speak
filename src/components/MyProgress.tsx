@@ -120,6 +120,28 @@ const MyProgress = ({ user, onNavigate }: MyProgressProps) => {
           </CardContent>
         </Card>
 
+        <Card className="mb-8 hover:shadow-md transition-shadow cursor-pointer" onClick={() => (onNavigate as any)('achievements')}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-display">Достижения</CardTitle>
+              <Icon name="ChevronRight" size={20} className="text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-16 h-16 rounded-full bg-yellow-500/10">
+                <Icon name="Trophy" size={32} className="text-yellow-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-2xl font-bold">{user.total_points || 0} баллов</p>
+                <p className="text-sm text-muted-foreground">
+                  Серия: {user.current_streak || 0} {user.current_streak === 1 ? 'день' : 'дней'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mb-8">
           <CardHeader>
             <CardTitle className="font-display">Дополнительная статистика</CardTitle>

@@ -10,10 +10,12 @@ import type { User } from '@/pages/Index';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
 import TelegramLinkBanner from './TelegramLinkBanner';
+import StreakCounter from './gamification/StreakCounter';
+import PointsDisplay from './gamification/PointsDisplay';
 
 interface DashboardProps {
   user: User;
-  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings') => void;
+  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements') => void;
   onLogout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -122,7 +124,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </p>
         </div>
 
-        <div className="grid gap-6 mb-8 md:grid-cols-3">
+        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -170,9 +172,43 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Сложность
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">
+                {user.exercise_difficulty === 'beginner' && '🌱 Новичок'}
+                {user.exercise_difficulty === 'intermediate' && '📚 Средний'}
+                {user.exercise_difficulty === 'advanced' && '🎓 Сложный'}
+                {user.exercise_difficulty === 'master' && '🏆 Мастер'}
+                {!user.exercise_difficulty && '📚 Средний'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Уровень упражнений
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+        {(user.total_points !== undefined || user.current_streak !== undefined) && (
+          <div className="grid gap-6 mb-8 md:grid-cols-2">
+            {user.total_points !== undefined && (
+              <PointsDisplay totalPoints={user.total_points} />
+            )}
+            {user.current_streak !== undefined && (
+              <StreakCounter 
+                currentStreak={user.current_streak} 
+                longestStreak={user.longest_streak || 0} 
+              />
+            )}
+          </div>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <button
             onClick={() => onNavigate('learn')}
             className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
@@ -196,6 +232,19 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
             <div className="text-center">
               <h3 className="font-display font-semibold text-lg mb-1">Мой словарь</h3>
               <p className="text-sm text-muted-foreground">Управление словами</p>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onNavigate('achievements')}
+            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
+          >
+            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-yellow-500/50">
+              <Icon name="Trophy" size={36} className="text-white" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-display font-semibold text-lg mb-1">Достижения</h3>
+              <p className="text-sm text-muted-foreground">Награды и прогресс</p>
             </div>
           </button>
 
