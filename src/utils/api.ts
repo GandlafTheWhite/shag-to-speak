@@ -6,7 +6,9 @@ const API_URLS = {
   telegramBotAuth: 'https://functions.poehali.dev/11cbde8f-4051-4ebf-8487-67996dc71ef3',
   telegramWebhook: 'https://functions.poehali.dev/e09a4bc7-f64b-4892-8115-71c6adc8bd2c',
   completeProfile: 'https://functions.poehali.dev/d7a51546-f81a-49bc-8dec-0e1026b78fe5',
-  telegramLink: 'https://functions.poehali.dev/c2111525-7f03-404a-8a73-22afb051c82f'
+  telegramLink: 'https://functions.poehali.dev/c2111525-7f03-404a-8a73-22afb051c82f',
+  exerciseCategories: 'https://functions.poehali.dev/2cb6dda2-5dee-4cc0-afe0-67993e14943d',
+  settings: 'https://functions.poehali.dev/988818e5-d5bb-4ef3-8d05-bd6be60b40a0'
 };
 
 export interface ApiError {
@@ -25,6 +27,10 @@ export interface User {
   daily_exercises_count: number;
   telegram_id?: number;
   profile_completed?: boolean;
+  exercise_difficulty?: 'beginner' | 'intermediate' | 'advanced' | 'master';
+  total_points?: number;
+  current_streak?: number;
+  longest_streak?: number;
 }
 
 export interface Word {
@@ -38,20 +44,35 @@ export interface Word {
   created_at?: string;
   category?: string;
   is_generating?: boolean;
+  transcription?: string;
+  part_of_speech?: string;
+  difficulty_level?: 'beginner' | 'intermediate' | 'advanced' | 'master';
+  example_sentence?: string;
 }
 
 export interface Exercise {
   word_id: number;
-  type: 'translation' | 'multiple_choice';
+  type: 'translation' | 'multiple_choice' | 'synonym_antonym' | 'sentence_construction' | 
+        'fill_blank' | 'context_match' | 'reverse_translation' | 'word_formation';
   question: string;
   options?: string[];
   correct_answer: string;
+  transcription?: string;
+  part_of_speech?: string;
+  word?: string;
+  hint?: string;
 }
 
 export interface ExerciseResult {
   word_id: number;
   is_correct: boolean;
   correct_answer: string;
+  points_earned?: number;
+}
+
+export interface ExerciseCategory {
+  name: string;
+  word_count: number;
 }
 
 export interface Stats {
@@ -229,8 +250,14 @@ class ApiClient {
     }
   }
 
-  async getExercises(): Promise<{ exercises: Exercise[]; exercises_remaining: number }> {
-    const response = await fetch(API_URLS.exercises, {
+  async getExercises(category?: string, difficulty?: string): Promise<{ exercises: Exercise[]; difficulty: string; exercises_remaining: number }> {
+    const params = new URLSearchParams();
+    if (category) params.append('category', category);
+    if (difficulty) params.append('difficulty', difficulty);
+    
+    const url = `${API_URLS.exercises}${params.toString() ? '?' + params.toString() : ''}`;
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -244,12 +271,14 @@ class ApiClient {
   }
 
   async submitAnswers(
-    answers: Array<{ word_id: number; answer: string }>
-  ): Promise<{ results: ExerciseResult[]; score: number; total: number; exercises_remaining: number }> {
+    answers: Array<{ word_id: number; answer: string; type: string; correct_answer?: string }>,
+    difficulty: string,
+    timeSpent: number
+  ): Promise<{ results: ExerciseResult[]; correct_count: number; total_count: number; total_points: number; current_streak: number; exercises_remaining: number }> {
     const response = await fetch(API_URLS.exercises, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ answers }),
+      body: JSON.stringify({ answers, difficulty, time_spent: timeSpent }),
     });
 
     if (!response.ok) {
@@ -342,6 +371,35 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.error || 'Failed to link Telegram');
+    }
+
+    return await response.json();
+  }
+
+  async getExerciseCategories(): Promise<{ categories: ExerciseCategory[]; total_categories: number }> {
+    const response = await fetch(API_URLS.exerciseCategories, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to get categories');
+    }
+
+    return await response.json();
+  }
+
+  async updateSettings(userId: number, data: { exercise_difficulty?: string; preferences?: string[] }): Promise<{ user: { id: number; exercise_difficulty: string; preferences: string[] } }> {
+    const response = await fetch(API_URLS.settings, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ user_id: userId, ...data }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to update settings');
     }
 
     return await response.json();
