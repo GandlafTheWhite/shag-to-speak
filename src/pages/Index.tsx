@@ -47,6 +47,11 @@ const Index = () => {
   const handleLogin = (userData: User) => {
     setUser(userData);
     localStorage.setItem('shagtospeak_user', JSON.stringify(userData));
+    
+    if (userData.profile_completed === false) {
+      setShowProfileSetup(true);
+    }
+    
     setCurrentPage('dashboard');
   };
 
@@ -95,7 +100,13 @@ const Index = () => {
         <>
           <Dashboard 
             user={user} 
-            onNavigate={setCurrentPage}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+              } else {
+                setCurrentPage(page);
+              }
+            }}
             onLogout={handleLogout}
             updateUser={updateUserData}
           />
@@ -111,34 +122,124 @@ const Index = () => {
         </>
       )}
       {currentPage === 'words' && user && (
-        <MyWords 
-          user={user}
-          onNavigate={setCurrentPage}
-          updateUser={updateUserData}
-        />
+        <>
+          <MyWords 
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page);
+              }
+            }}
+            updateUser={updateUserData}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
       )}
       {currentPage === 'learn' && user && (
-        <LearnWords 
-          user={user}
-          onNavigate={setCurrentPage}
-          updateUser={updateUserData}
-        />
+        <>
+          <LearnWords 
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page);
+              }
+            }}
+            updateUser={updateUserData}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
       )}
       {currentPage === 'progress' && user && (
-        <MyProgress 
-          user={user}
-          onNavigate={setCurrentPage}
-        />
+        <>
+          <MyProgress 
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page);
+              }
+            }}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
       )}
       {currentPage === 'help' && user && (
-        <Help onNavigate={setCurrentPage} />
+        <>
+          <Help onNavigate={(page) => {
+            if (user.profile_completed === false) {
+              setShowProfileSetup(true);
+              setCurrentPage('dashboard');
+            } else {
+              setCurrentPage(page);
+            }
+          }} />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
       )}
       {currentPage === 'settings' && user && (
-        <Settings
-          user={user}
-          onNavigate={setCurrentPage}
-          updateUser={updateUserData}
-        />
+        <>
+          <Settings
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page);
+              }
+            }}
+            updateUser={updateUserData}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
       )}
     </div>
   );
