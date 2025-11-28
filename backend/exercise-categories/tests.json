@@ -1,0 +1,28 @@
+{
+  "tests": [
+    {
+      "name": "Get categories from user dictionary",
+      "method": "GET",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "categories": "array",
+        "total_categories": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Fail without user ID",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

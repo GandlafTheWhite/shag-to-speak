@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Update exercise difficulty",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "exercise_difficulty": "intermediate"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "user": {
+          "id": "number",
+          "exercise_difficulty": "string"
+        }
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Fail without user ID",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "exercise_difficulty": "advanced"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
