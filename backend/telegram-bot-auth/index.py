@@ -83,13 +83,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         is_new_user = False
         
-        if user:
-            cur.execute(
-                "UPDATE users SET updated_at = NOW() WHERE telegram_id = %s",
-                (telegram_id,)
-            )
-            conn.commit()
-        else:
+        if not user:
             is_new_user = True
             name = f'User{telegram_id}'
             cur.execute(
