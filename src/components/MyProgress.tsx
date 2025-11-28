@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
+import StreakCounter from './gamification/StreakCounter';
+import PointsDisplay from './gamification/PointsDisplay';
 
 interface MyProgressProps {
   user: User;
@@ -73,6 +75,20 @@ const MyProgress = ({ user, onNavigate }: MyProgressProps) => {
             Путь к знанию английского языка
           </p>
         </div>
+
+        {(user.total_points !== undefined || user.current_streak !== undefined) && (
+          <div className="grid gap-6 mb-8 md:grid-cols-2">
+            {user.total_points !== undefined && (
+              <PointsDisplay totalPoints={user.total_points} />
+            )}
+            {user.current_streak !== undefined && (
+              <StreakCounter 
+                currentStreak={user.current_streak} 
+                longestStreak={user.longest_streak || 0} 
+              />
+            )}
+          </div>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2 mb-8">
           {stats.map((stat, idx) => (

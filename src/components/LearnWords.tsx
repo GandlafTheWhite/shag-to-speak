@@ -103,10 +103,14 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
       await apiClient.updateSettings(user.id, { exercise_difficulty: newDifficulty });
       setDifficulty(newDifficulty);
       updateUser({ exercise_difficulty: newDifficulty });
+      setShowDifficultyModal(false);
+      
       toast({
-        title: 'Сложность обновлена',
+        title: 'Сложность выбрана',
         description: `Уровень: ${difficultyLabels[newDifficulty]}`,
       });
+      
+      loadCategories();
     } catch (error) {
       toast({
         title: 'Ошибка',
@@ -192,149 +196,41 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
             </Button>
             <h1 className="text-2xl font-display font-bold">Упражнения</h1>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDifficultyModal(true)}
-          >
-            <Icon name="Settings" size={18} className="mr-2" />
-            {difficultyLabels[difficulty as keyof typeof difficultyLabels]}
-          </Button>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
-        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Баллы
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {user.total_points || 0}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Текущая серия
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Icon name="Flame" size={24} className="text-orange-500" />
-                {user.current_streak || 0}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Осталось сегодня
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {user.status === 'premium' ? '∞' : user.exercises_remaining}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Сложность
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {difficultyLabels[difficulty as keyof typeof difficultyLabels]}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-display font-bold mb-2">Выберите тип упражнения</h2>
+          <p className="text-muted-foreground">
+            У вас осталось <span className="font-bold text-foreground">{user.status === 'premium' ? 'безограниченно' : user.exercises_remaining}</span> упражнений сегодня
+          </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
           <button
-            onClick={handleStartExercises}
+            onClick={() => setShowDifficultyModal(true)}
             disabled={isLoadingCategories}
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-blue-500/50">
-              <Icon name="Brain" size={36} className="text-white" />
+            <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-blue-500/50">
+              <Icon name="Brain" size={40} className="text-white" />
             </div>
             <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Умное упражнение</h3>
-              <p className="text-sm text-muted-foreground">Адаптивная система</p>
+              <h3 className="font-display font-semibold text-xl mb-2">Умное упражнение</h3>
+              <p className="text-sm text-muted-foreground">Адаптивная система с 8 типами заданий</p>
             </div>
           </button>
 
           <button
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
+            className="group flex flex-col items-center gap-4 p-8 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
             disabled
           >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-              <Icon name="BookMarked" size={36} className="text-white" />
+            <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <Icon name="Sparkles" size={40} className="text-white" />
             </div>
             <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Словарные карточки</h3>
-              <p className="text-sm text-muted-foreground">Скоро</p>
-            </div>
-          </button>
-
-          <button
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
-              <Icon name="Volume2" size={36} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Аудирование</h3>
-              <p className="text-sm text-muted-foreground">Скоро</p>
-            </div>
-          </button>
-
-          <button
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg">
-              <Icon name="MessageSquare" size={36} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Диалоги</h3>
-              <p className="text-sm text-muted-foreground">Скоро</p>
-            </div>
-          </button>
-
-          <button
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center shadow-lg">
-              <Icon name="Lightbulb" size={36} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Викторина</h3>
-              <p className="text-sm text-muted-foreground">Скоро</p>
-            </div>
-          </button>
-
-          <button
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1 opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-              <Icon name="Sparkles" size={36} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">AI Репетитор</h3>
+              <h3 className="font-display font-semibold text-xl mb-2">AI Репетитор</h3>
               <p className="text-sm text-muted-foreground">Скоро</p>
             </div>
           </button>

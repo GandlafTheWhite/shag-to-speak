@@ -76,9 +76,12 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
             ShagToSpeak
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user.name}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{user.name}</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+                {user.status === 'free' ? 'Free' : 'Premium'}
+              </span>
+            </div>
             <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')}>
               <Icon name="Settings" size={18} />
             </Button>
@@ -131,7 +134,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </p>
         </div>
 
-        <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-6 mb-8 md:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -161,59 +164,9 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
               </p>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Статус
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {user.status === 'free' ? '🆓 Free' : '⭐ Premium'}
-              </div>
-              {user.status === 'free' && (
-                <p className="text-xs text-primary mt-2">
-                  Обновить до Premium
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Сложность
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-foreground">
-                {user.exercise_difficulty === 'beginner' && '🌱 Новичок'}
-                {user.exercise_difficulty === 'intermediate' && '📚 Средний'}
-                {user.exercise_difficulty === 'advanced' && '🎓 Сложный'}
-                {user.exercise_difficulty === 'master' && '🏆 Мастер'}
-                {!user.exercise_difficulty && '📚 Средний'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Уровень упражнений
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
-        {(user.total_points !== undefined || user.current_streak !== undefined) && (
-          <div className="grid gap-6 mb-8 md:grid-cols-2">
-            {user.total_points !== undefined && (
-              <PointsDisplay totalPoints={user.total_points} />
-            )}
-            {user.current_streak !== undefined && (
-              <StreakCounter 
-                currentStreak={user.current_streak} 
-                longestStreak={user.longest_streak || 0} 
-              />
-            )}
-          </div>
-        )}
+
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <button

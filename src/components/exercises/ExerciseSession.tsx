@@ -95,39 +95,46 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
 
   if (showResult && results) {
     return (
-      <div className="space-y-6">
-        <Card className="border-2 border-primary">
-          <CardHeader>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-                <Icon name="Trophy" size={48} className="text-primary" />
+      <div className="min-h-screen">
+        <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4">
+            <h1 className="text-xl font-display font-bold text-center">Результаты</h1>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-6 max-w-2xl">
+          <Card className="border-2 border-primary mb-6">
+            <CardHeader>
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+                  <Icon name="Trophy" size={48} className="text-primary" />
+                </div>
+                <h2 className="font-display text-2xl sm:text-3xl mb-2">Отличная работа!</h2>
+                <p className="text-muted-foreground">Ты завершил упражнение</p>
               </div>
-              <h2 className="font-display text-3xl mb-2">Отличная работа!</h2>
-              <p className="text-muted-foreground">Ты завершил упражнение</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3 mb-6">
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <div className="text-3xl font-bold text-primary mb-1">
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 grid-cols-3 mb-6">
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-1">
                   {results.correct_count}/{results.total_count}
                 </div>
-                <p className="text-sm text-muted-foreground">Правильно</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Правильно</p>
               </div>
               
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <div className="text-3xl font-bold text-orange-500 mb-1">
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-orange-500 mb-1">
                   +{results.total_points}
                 </div>
-                <p className="text-sm text-muted-foreground">Баллов</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Баллов</p>
               </div>
               
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <div className="text-3xl font-bold text-purple-500 mb-1 flex items-center justify-center gap-2">
-                  <Icon name="Flame" size={32} className="text-orange-500" />
+              <div className="text-center p-3 sm:p-4 bg-muted rounded-lg">
+                <div className="text-2xl sm:text-3xl font-bold text-purple-500 mb-1 flex items-center justify-center gap-1 sm:gap-2">
+                  <Icon name="Flame" size={24} className="text-orange-500 sm:w-8 sm:h-8" />
                   {results.current_streak}
                 </div>
-                <p className="text-sm text-muted-foreground">Серия дней</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Серия</p>
               </div>
             </div>
 
@@ -170,14 +177,13 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
               ))}
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={() => onComplete(results)} className="flex-1">
+              <Button onClick={() => onComplete(results)} size="lg" className="w-full">
                 <Icon name="Home" size={20} className="mr-2" />
                 Вернуться
               </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </main>
       </div>
     );
   }
@@ -274,33 +280,44 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack}>
-          <Icon name="ArrowLeft" size={20} className="mr-2" />
-          Назад
-        </Button>
-        <div className="text-sm font-medium">
-          {currentIndex + 1} / {exercises.length}
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <Icon name="ArrowLeft" size={20} />
+          </Button>
+          <div className="text-sm font-medium">
+            {currentIndex + 1} / {exercises.length}
+          </div>
+          <div className="w-10" />
         </div>
-      </div>
+        <div className="container mx-auto px-4 pb-2">
+          <Progress value={progress} className="h-1.5" />
+        </div>
+      </header>
 
-      <Progress value={progress} className="h-2" />
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
+        <Card className="border-0 shadow-none sm:border sm:shadow-sm">
+          <CardContent className="p-4 sm:p-6">
+            {renderExerciseContent()}
+          </CardContent>
+        </Card>
+      </main>
 
-      <Card>
-        <CardContent className="pt-6">
-          {renderExerciseContent()}
-
-          <div className="flex gap-3 mt-6">
+      <footer className="border-t bg-card/50 backdrop-blur-sm sticky bottom-0">
+        <div className="container mx-auto px-4 py-3 max-w-2xl">
+          <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handlePrevious}
               disabled={currentIndex === 0}
+              size="lg"
+              className="flex-1"
             >
-              <Icon name="ChevronLeft" size={20} className="mr-2" />
-              Назад
+              <Icon name="ChevronLeft" size={20} />
+              <span className="hidden sm:inline ml-2">Назад</span>
             </Button>
-            <Button onClick={handleNext} className="flex-1">
+            <Button onClick={handleNext} size="lg" className="flex-[2]">
               {currentIndex === exercises.length - 1 ? (
                 <>
                   Завершить
@@ -314,8 +331,8 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
               )}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </footer>
     </div>
   );
 };
