@@ -86,13 +86,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if not user:
             is_new_user = True
             name = f'User{telegram_id}'
+            email = f'tg{telegram_id}@shagtospeak.ru'
             cur.execute(
                 """
                 INSERT INTO users (telegram_id, name, email, password_hash, status, preferences, daily_exercises_count)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING *
                 """,
-                (telegram_id, name, '', '', 'free', [], 3)
+                (telegram_id, name, email, '', 'free', [], 3)
             )
             user = cur.fetchone()
             conn.commit()
