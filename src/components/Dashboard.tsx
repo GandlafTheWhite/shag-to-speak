@@ -208,7 +208,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <button
             onClick={() => onNavigate('learn')}
             className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
@@ -236,24 +236,11 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </button>
 
           <button
-            onClick={() => onNavigate('achievements')}
-            className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
-          >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-yellow-500 to-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-yellow-500/50">
-              <Icon name="Trophy" size={36} className="text-white" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-display font-semibold text-lg mb-1">Достижения</h3>
-              <p className="text-sm text-muted-foreground">Награды и прогресс</p>
-            </div>
-          </button>
-
-          <button
             onClick={() => onNavigate('progress')}
             className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
           >
-            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-amber-500/50">
-              <Icon name="TrendingUp" size={36} className="text-white" />
+            <div className="relative w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-purple-500/50">
+              <Icon name="Award" size={36} className="text-white" />
             </div>
             <div className="text-center">
               <h3 className="font-display font-semibold text-lg mb-1">Мои успехи</h3>

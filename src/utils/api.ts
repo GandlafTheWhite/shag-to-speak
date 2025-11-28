@@ -180,6 +180,10 @@ class ApiClient {
   }
 
   async getWords(): Promise<Word[]> {
+    if (!this.userId) {
+      throw new Error('User ID required');
+    }
+
     const response = await fetch(API_URLS.words, {
       method: 'GET',
       headers: this.getHeaders(),

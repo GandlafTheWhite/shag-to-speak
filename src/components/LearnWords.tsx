@@ -184,99 +184,118 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="font-display text-3xl mb-2">Упражнения</h2>
-        <p className="text-muted-foreground">
-          Выбери тип упражнений для изучения слов
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-3xl mb-2">Упражнения</h2>
+          <p className="text-muted-foreground">
+            Выбери тип упражнений для изучения слов
+          </p>
+        </div>
+        <Button variant="ghost" onClick={() => onNavigate('dashboard')}>
+          <Icon name="X" size={20} />
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer border-2 hover:border-primary/50">
-          <CardHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Icon name="Brain" size={24} className="text-primary" />
-              </div>
-              <div>
-                <CardTitle>Умные упражнения</CardTitle>
-                <CardDescription>8 типов заданий по уровню</CardDescription>
-              </div>
-            </div>
+      <div className="grid gap-6 mb-8 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Баллы
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Адаптивная система с геймификацией, баллами и прогрессом
-            </p>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Icon name="Settings" size={16} className="text-muted-foreground" />
-                <span className="text-sm font-medium">
-                  {difficultyLabels[difficulty as keyof typeof difficultyLabels]}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDifficultyModal(true)}
-              >
-                Изменить
-              </Button>
+            <div className="text-3xl font-bold text-foreground">
+              {user.total_points || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Текущая серия
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground flex items-center gap-2">
+              <Icon name="Flame" size={24} className="text-orange-500" />
+              {user.current_streak || 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Осталось сегодня
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-foreground">
+              {user.status === 'premium' ? '∞' : user.exercises_remaining}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Сложность
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-foreground">
+              {difficultyLabels[difficulty as keyof typeof difficultyLabels]}
             </div>
             <Button
-              onClick={handleStartExercises}
-              className="w-full"
-              disabled={isLoadingCategories}
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDifficultyModal(true)}
+              className="mt-2 -ml-2"
             >
-              {isLoadingCategories ? (
-                <>
-                  <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
-                  Загрузка...
-                </>
-              ) : (
-                <>
-                  <Icon name="Play" size={20} className="mr-2" />
-                  Начать упражнения
-                </>
-              )}
+              Изменить
             </Button>
           </CardContent>
         </Card>
-
-        <Card className="border-2 border-muted">
-          <CardHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <Icon name="Trophy" size={24} className="text-muted-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-muted-foreground">Твой прогресс</CardTitle>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Баллы</span>
-                <span className="text-lg font-bold">{user.total_points || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Текущая серия</span>
-                <div className="flex items-center gap-1">
-                  <Icon name="Flame" size={16} className="text-orange-500" />
-                  <span className="text-lg font-bold">{user.current_streak || 0}</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Осталось сегодня</span>
-                <span className="text-lg font-bold">
-                  {user.status === 'premium' ? '∞' : user.exercises_remaining}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      <Card className="border-2 border-primary/20">
+        <CardHeader>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Icon name="Brain" size={32} className="text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl mb-1">Умные упражнения</CardTitle>
+              <CardDescription className="text-base">8 типов заданий с адаптивной сложностью</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-6">
+            Система автоматически подбирает упражнения по твоему уровню сложности.
+            Зарабатывай баллы, повышай серию дней и открывай достижения!
+          </p>
+          <Button
+            onClick={handleStartExercises}
+            className="w-full"
+            size="lg"
+            disabled={isLoadingCategories}
+          >
+            {isLoadingCategories ? (
+              <>
+                <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
+                Загрузка...
+              </>
+            ) : (
+              <>
+                <Icon name="Play" size={20} className="mr-2" />
+                Начать упражнения
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       <DifficultySelector
         open={showDifficultyModal}
