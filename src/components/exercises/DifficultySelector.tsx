@@ -47,24 +47,23 @@ const DIFFICULTY_LEVELS = [
 const DifficultySelector = ({ open, currentDifficulty, onSelect, onClose }: DifficultySelectorProps) => {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl text-center">Выбери уровень сложности</DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogTitle className="font-display text-xl sm:text-2xl text-center">Выбери уровень сложности</DialogTitle>
+          <DialogDescription className="text-center text-sm">
             Уровень влияет на типы упражнений и количество баллов
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
           {DIFFICULTY_LEVELS.map((level) => (
             <button
               key={level.id}
               onClick={() => {
                 onSelect(level.id);
-                onClose();
               }}
               className={`
-                relative p-6 rounded-lg border-2 transition-all text-left
+                relative p-4 sm:p-6 rounded-lg border-2 transition-all text-left
                 ${currentDifficulty === level.id 
                   ? 'border-primary bg-primary/5 shadow-lg' 
                   : 'border-border hover:border-primary/50'
@@ -80,14 +79,14 @@ const DifficultySelector = ({ open, currentDifficulty, onSelect, onClose }: Diff
                 </div>
               )}
 
-              <div className="flex items-start gap-4">
-                <div className={`flex-shrink-0 w-12 h-12 rounded-full ${level.bgColor} flex items-center justify-center`}>
-                  <Icon name={level.icon} size={24} className={level.color} />
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full ${level.bgColor} flex items-center justify-center`}>
+                  <Icon name={level.icon} size={20} className={`${level.color} sm:w-6 sm:h-6`} />
                 </div>
                 
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">{level.label}</h3>
-                  <p className="text-sm text-muted-foreground">{level.description}</p>
+                  <h3 className="font-semibold text-base sm:text-lg mb-1">{level.label}</h3>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{level.description}</p>
                 </div>
               </div>
             </button>

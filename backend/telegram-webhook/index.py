@@ -86,12 +86,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         cur.close()
         conn.close()
         
-        message_text = f"🔐 Ваш код для входа на ShagToSpeak:\n\n<b>{code}</b>\n\nКод действителен 10 минут.\n\nВведите его на сайте для регистрации или входа."
+        message_text = f"🔐 Ваш код для входа на ShagToSpeak:\n\nКод действителен 10 минут.\n\nВведите его на сайте для регистрации или входа."
         
         telegram_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        
         requests.post(telegram_url, json={
             'chat_id': chat_id,
-            'text': message_text,
+            'text': message_text
+        })
+        
+        requests.post(telegram_url, json={
+            'chat_id': chat_id,
+            'text': f'<code>{code}</code>',
             'parse_mode': 'HTML'
         })
         

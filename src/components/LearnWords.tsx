@@ -217,8 +217,8 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
               <Icon name="Brain" size={40} className="text-white" />
             </div>
             <div className="text-center">
-              <h3 className="font-display font-semibold text-xl mb-2">Умное упражнение</h3>
-              <p className="text-sm text-muted-foreground">Адаптивная система с 8 типами заданий</p>
+              <h3 className="font-display font-semibold text-xl mb-2">Умное изучение слов</h3>
+              <p className="text-sm text-muted-foreground">ИИ-Адаптивная система с 8 типами заданий на основе уровня сложности и ваших интересов</p>
             </div>
           </button>
 
