@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { useToast } from '@/hooks/use-toast';
-import api, { Exercise, ExerciseCategory } from '@/utils/api';
+import { Exercise, ExerciseCategory, apiClient } from '@/utils/api';
 import DifficultySelector from '@/components/exercises/DifficultySelector';
 import CategoryPicker from '@/components/exercises/CategoryPicker';
 import ExerciseSession from '@/components/exercises/ExerciseSession';
@@ -36,7 +36,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
   const loadCategories = async () => {
     setIsLoadingCategories(true);
     try {
-      const data = await api.getExerciseCategories();
+      const data = await apiClient.getExerciseCategories();
       setCategories(data.categories);
       
       if (data.categories.length === 0) {
@@ -75,7 +75,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
 
     setIsLoadingExercises(true);
     try {
-      const data = await api.getExercises(category, difficulty);
+      const data = await apiClient.getExercises(category, difficulty);
       setExercises(data.exercises);
       setCurrentView('exercise');
     } catch (error) {
@@ -100,7 +100,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
 
   const handleDifficultyChange = async (newDifficulty: 'beginner' | 'intermediate' | 'advanced' | 'master') => {
     try {
-      await api.updateSettings(user.id, { exercise_difficulty: newDifficulty });
+      await apiClient.updateSettings(user.id, { exercise_difficulty: newDifficulty });
       setDifficulty(newDifficulty);
       updateUser({ exercise_difficulty: newDifficulty });
       toast({

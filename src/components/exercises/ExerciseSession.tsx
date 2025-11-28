@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
-import { Exercise } from '@/utils/api';
-import api from '@/utils/api';
+import { Exercise, apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExerciseSessionProps {
@@ -73,7 +72,7 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
         correct_answer: ex.correct_answer,
       }));
 
-      const data = await api.submitAnswers(answersData, difficulty, timeSpent);
+      const data = await apiClient.submitAnswers(answersData, difficulty, timeSpent);
       setResults(data);
       setShowResult(true);
     } catch (error) {
