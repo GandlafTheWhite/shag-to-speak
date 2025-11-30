@@ -136,33 +136,42 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
 
   if (currentView === 'category-select') {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-display text-3xl mb-2">Упражнения</h2>
-            <p className="text-muted-foreground">
-              Выбери категорию для тренировки
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
+      <div className="min-h-screen">
+        <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={handleBackToMenu}>
+                <Icon name="ArrowLeft" size={20} />
+              </Button>
+              <h1 className="text-xl sm:text-2xl font-display font-bold">Упражнения</h1>
+            </div>
             <Button
               variant="outline"
+              size="sm"
               onClick={() => setShowDifficultyModal(true)}
+              className="hidden sm:flex"
             >
-              <Icon name="Settings" size={20} className="mr-2" />
+              <Icon name="Settings" size={18} className="mr-2" />
               {difficultyLabels[difficulty as keyof typeof difficultyLabels]}
             </Button>
-            <Button variant="ghost" onClick={handleBackToMenu}>
-              <Icon name="X" size={20} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowDifficultyModal(true)}
+              className="sm:hidden"
+            >
+              <Icon name="Settings" size={18} />
             </Button>
           </div>
-        </div>
+        </header>
 
-        <CategoryPicker
-          categories={categories}
-          onSelect={handleCategorySelect}
-          isLoading={isLoadingCategories}
-        />
+        <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+          <CategoryPicker
+            categories={categories}
+            onSelect={handleCategorySelect}
+            isLoading={isLoadingCategories}
+          />
+        </main>
 
         <DifficultySelector
           open={showDifficultyModal}
