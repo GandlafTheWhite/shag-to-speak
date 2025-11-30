@@ -283,13 +283,14 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={onBack}>
-            <Icon name="ArrowLeft" size={20} />
+          <Button variant="outline" size="default" onClick={onBack}>
+            <Icon name="ArrowLeft" size={20} className="mr-2" />
+            <span className="hidden sm:inline">Назад</span>
           </Button>
           <div className="text-sm font-medium">
             {currentIndex + 1} / {exercises.length}
           </div>
-          <div className="w-10" />
+          <div className="w-20" />
         </div>
         <div className="container mx-auto px-4 pb-2">
           <Progress value={progress} className="h-1.5" />

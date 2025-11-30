@@ -157,11 +157,12 @@ const Achievements = ({ user, onNavigate }: AchievementsProps) => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => onNavigate('dashboard')}>
-            <Icon name="ArrowLeft" size={18} />
+        <div className="container mx-auto px-4 py-4 flex items-center gap-2">
+          <Button variant="outline" size="default" onClick={() => onNavigate('dashboard')}>
+            <Icon name="ArrowLeft" size={20} className="mr-2" />
+            <span className="hidden sm:inline">Назад</span>
           </Button>
-          <h1 className="text-2xl font-display font-bold text-foreground">
+          <h1 className="text-xl sm:text-2xl font-display font-bold text-foreground ml-2">
             Достижения
           </h1>
         </div>
