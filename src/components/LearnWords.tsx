@@ -140,7 +140,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="default" onClick={handleBackToMenu}>
+              <Button variant="default" size="default" onClick={handleBackToMenu} className="bg-primary hover:bg-primary/90">
                 <Icon name="ArrowLeft" size={20} className="mr-2" />
                 <span className="hidden sm:inline">Назад</span>
               </Button>
@@ -201,7 +201,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="default" onClick={() => onNavigate('dashboard')}>
+            <Button variant="default" size="default" onClick={() => onNavigate('dashboard')} className="bg-primary hover:bg-primary/90">
               <Icon name="ArrowLeft" size={20} className="mr-2" />
               <span className="hidden sm:inline">Назад</span>
             </Button>
