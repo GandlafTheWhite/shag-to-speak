@@ -71,20 +71,23 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
         description: 'Доступно 3 упражнения в день. Оформите подписку за 199 руб/мес для снятия лимитов.',
         variant: 'destructive',
       });
+      setIsLoadingExercises(false);
       return;
     }
 
+    setExercises([]);
     setIsLoadingExercises(true);
+    
     try {
       const data = await apiClient.getExercises(category, difficulty);
       setExercises(data.exercises);
-      setCurrentView('exercise');
     } catch (error) {
       toast({
         title: 'Ошибка',
         description: error instanceof Error ? error.message : 'Не удалось загрузить упражнения',
         variant: 'destructive',
       });
+      setCurrentView('menu');
     } finally {
       setIsLoadingExercises(false);
     }
@@ -96,6 +99,8 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
+    setIsLoadingExercises(true);
+    setCurrentView('exercise');
     loadExercises(category);
   };
 

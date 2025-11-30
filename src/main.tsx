@@ -2,8 +2,18 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './index.css'
+import { checkAndMigrateVersion, APP_VERSION } from './version'
 
-createRoot(document.getElementById("root")!).render(<App />);
+console.log(`[App] Starting version ${APP_VERSION}`);
+
+const needsReload = checkAndMigrateVersion();
+
+if (needsReload) {
+  console.log('[App] Version updated, reloading...');
+  window.location.reload();
+} else {
+  createRoot(document.getElementById("root")!).render(<App />);
+}
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -17,11 +27,11 @@ if ('serviceWorker' in navigator) {
           if (newWorker) {
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log('[App] New service worker available');
-                if (confirm('Доступна новая версия приложения. Обновить?')) {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                console.log('[App] New service worker available, auto-updating...');
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                setTimeout(() => {
                   window.location.reload();
-                }
+                }, 1000);
               }
             });
           }
