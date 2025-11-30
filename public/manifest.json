@@ -1,0 +1,51 @@
+{
+  "name": "ShagToSpeak — Изучение английского шаг за шагом",
+  "short_name": "ShagToSpeak",
+  "description": "Приложение для изучения английских слов. Путь важнее цели.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAFA",
+  "theme_color": "#3EACD6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/716c5058-2003-4ec4-a4c3-0c8f0da9eb60.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/716c5058-2003-4ec4-a4c3-0c8f0da9eb60.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Мой словарь",
+      "short_name": "Словарь",
+      "description": "Открыть словарь слов",
+      "url": "/?page=words",
+      "icons": [
+        {
+          "src": "https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/716c5058-2003-4ec4-a4c3-0c8f0da9eb60.jpg",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Учить слова",
+      "short_name": "Учить",
+      "description": "Начать упражнения",
+      "url": "/?page=learn",
+      "icons": [
+        {
+          "src": "https://cdn.poehali.dev/projects/a751abad-be5b-4dc6-8136-de83f53c7858/files/716c5058-2003-4ec4-a4c3-0c8f0da9eb60.jpg",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

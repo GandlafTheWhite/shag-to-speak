@@ -13,6 +13,7 @@ import TelegramLinkBanner from './TelegramLinkBanner';
 import StreakCounter from './gamification/StreakCounter';
 import PointsDisplay from './gamification/PointsDisplay';
 import WordEnrichmentProgress from './WordEnrichmentProgress';
+import InstallPWAPrompt from './InstallPWAPrompt';
 
 interface DashboardProps {
   user: User;
@@ -98,6 +99,8 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
       </header>
 
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-12 max-w-4xl animate-fade-in">
+        <InstallPWAPrompt />
+        
         <TelegramLinkBanner user={user} onUpdate={updateUser} />
         
         {user.word_count > 0 && (
