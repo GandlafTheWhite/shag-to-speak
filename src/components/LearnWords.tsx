@@ -48,6 +48,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
         onNavigate('words');
       } else if (data.categories.length === 1) {
         setSelectedCategory(data.categories[0].name);
+        setCurrentView('exercise');
         loadExercises(data.categories[0].name);
       } else {
         setCurrentView('category-select');
@@ -135,6 +136,30 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
   };
 
   if (currentView === 'category-select') {
+    if (isLoadingCategories && categories.length === 0) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+          <div className="text-center space-y-6 max-w-md">
+            <div className="relative">
+              <div className="w-24 h-24 mx-auto">
+                <Icon name="Loader2" size={96} className="animate-spin text-primary" />
+              </div>
+              <div className="absolute inset-0 w-24 h-24 mx-auto rounded-full border-4 border-primary/20 animate-pulse" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold">
+                Загружаем категории
+              </h2>
+              <p className="text-base sm:text-lg text-muted-foreground">
+                Подготавливаем список тем для изучения...
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="min-h-screen">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
@@ -185,13 +210,42 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
   }
 
   if (currentView === 'exercise') {
+    if (isLoadingExercises) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-background p-6">
+          <div className="text-center space-y-6 max-w-md">
+            <div className="relative">
+              <div className="w-24 h-24 mx-auto">
+                <Icon name="Loader2" size={96} className="animate-spin text-primary" />
+              </div>
+              <div className="absolute inset-0 w-24 h-24 mx-auto rounded-full border-4 border-primary/20 animate-pulse" />
+            </div>
+            
+            <div className="space-y-2">
+              <h2 className="text-2xl sm:text-3xl font-display font-bold">
+                Генерируем упражнения
+              </h2>
+              <p className="text-base sm:text-lg text-muted-foreground">
+                Подбираем задания специально для тебя...
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Icon name="Sparkles" size={16} className="text-primary animate-pulse" />
+              <span>Это может занять до 30 секунд</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <ExerciseSession
         exercises={exercises}
         difficulty={difficulty}
         onComplete={handleExerciseComplete}
         onBack={handleBackToMenu}
-        isLoading={isLoadingExercises}
+        isLoading={false}
       />
     );
   }

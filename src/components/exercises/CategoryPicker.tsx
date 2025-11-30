@@ -66,7 +66,8 @@ const CategoryPicker = ({ categories, onSelect, isLoading }: CategoryPickerProps
             <button
               key={category.name}
               onClick={() => onSelect(category.name)}
-              className="group flex items-center gap-4 p-4 rounded-xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 text-left"
+              disabled={isLoading}
+              className="group flex items-center gap-4 p-4 rounded-xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 text-left disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:shadow-none disabled:hover:translate-y-0"
             >
               <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center transition-all group-hover:scale-110">
                 <span className="text-3xl sm:text-4xl">{icon}</span>
