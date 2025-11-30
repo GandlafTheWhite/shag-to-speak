@@ -157,7 +157,7 @@ const Achievements = ({ user, onNavigate }: AchievementsProps) => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-2">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 max-w-full">
           <Button variant="default" size="default" onClick={() => onNavigate('dashboard')} className="bg-primary hover:bg-primary/90">
             <Icon name="ArrowLeft" size={20} className="mr-2" />
             <span className="hidden sm:inline">Назад</span>
@@ -168,17 +168,17 @@ const Achievements = ({ user, onNavigate }: AchievementsProps) => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-3xl font-bold">Твои достижения</h2>
-              <p className="text-muted-foreground">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-6xl">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-4">
+            <div className="min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-bold break-words">Твои достижения</h2>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Разблокировано {unlockedCount} из {totalCount}
               </p>
             </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold text-primary">{Math.round(completionPercent)}%</div>
+            <div className="text-left sm:text-right flex-shrink-0">
+              <div className="text-3xl sm:text-4xl font-bold text-primary">{Math.round(completionPercent)}%</div>
               <p className="text-sm text-muted-foreground">завершено</p>
             </div>
           </div>

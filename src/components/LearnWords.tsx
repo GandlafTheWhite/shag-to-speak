@@ -138,7 +138,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
     return (
       <div className="min-h-screen">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center max-w-full">
             <div className="flex items-center gap-2">
               <Button variant="default" size="default" onClick={handleBackToMenu} className="bg-primary hover:bg-primary/90">
                 <Icon name="ArrowLeft" size={20} className="mr-2" />
@@ -166,7 +166,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+        <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl animate-fade-in">
           <CategoryPicker
             categories={categories}
             onSelect={handleCategorySelect}
@@ -199,7 +199,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center max-w-full">
           <div className="flex items-center gap-2">
             <Button variant="default" size="default" onClick={() => onNavigate('dashboard')} className="bg-primary hover:bg-primary/90">
               <Icon name="ArrowLeft" size={20} className="mr-2" />
@@ -210,7 +210,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl animate-fade-in">
         <div className="text-center mb-8">
           <h2 className="text-2xl font-display font-bold mb-2">Выберите тип упражнения</h2>
           <p className="text-muted-foreground">

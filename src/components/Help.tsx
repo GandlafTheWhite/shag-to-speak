@@ -46,7 +46,7 @@ const Help = ({ onNavigate }: HelpProps) => {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 max-w-full">
           <div className="flex items-center gap-2">
             <Button variant="default" size="default" onClick={() => onNavigate('dashboard')} className="bg-primary hover:bg-primary/90">
               <Icon name="ArrowLeft" size={20} className="mr-2" />

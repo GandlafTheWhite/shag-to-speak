@@ -57,11 +57,11 @@ const ProfileSetupWizard = ({ open, userId, initialName, onComplete, isLoading }
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-center gap-2 mb-6">
+    <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 px-2">
       {[1, 2, 3, 4].map((s) => (
         <div
           key={s}
-          className={`h-2 w-12 rounded-full transition-colors ${
+          className={`h-1.5 sm:h-2 flex-1 max-w-[60px] rounded-full transition-colors ${
             s === step ? 'bg-primary' : s < step ? 'bg-primary/50' : 'bg-muted'
           }`}
         />
@@ -71,12 +71,12 @@ const ProfileSetupWizard = ({ open, userId, initialName, onComplete, isLoading }
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-full" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl text-center">
+          <DialogTitle className="font-display text-xl sm:text-2xl text-center break-words">
             Привет, Путник! 🚀
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center text-sm sm:text-base">
             Осталось совсем немного
           </DialogDescription>
         </DialogHeader>

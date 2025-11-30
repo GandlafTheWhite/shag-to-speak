@@ -97,12 +97,12 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
     return (
       <div className="min-h-screen">
         <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="container mx-auto px-4 py-4">
-            <h1 className="text-xl font-display font-bold text-center">Результаты</h1>
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 max-w-full">
+            <h1 className="text-lg sm:text-xl font-display font-bold text-center">Результаты</h1>
           </div>
         </header>
 
-        <main className="container mx-auto px-4 py-6 max-w-2xl">
+        <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
           <Card className="border-2 border-primary mb-6">
             <CardHeader>
               <div className="text-center">
@@ -207,8 +207,8 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
       case 'sentence_construction':
         return (
           <div className="space-y-4">
-            <div className="text-center p-6 bg-muted rounded-lg">
-              <p className="text-2xl font-bold mb-2">{currentExercise.question}</p>
+            <div className="text-center p-4 sm:p-6 bg-muted rounded-lg">
+              <p className="text-xl sm:text-2xl font-bold mb-2 break-words">{currentExercise.question}</p>
               {currentExercise.transcription && (
                 <p className="text-sm text-muted-foreground mb-1">[{currentExercise.transcription}]</p>
               )}
@@ -216,7 +216,7 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
                 <p className="text-xs text-muted-foreground">({currentExercise.part_of_speech})</p>
               )}
               {currentExercise.hint && (
-                <p className="text-sm text-muted-foreground mt-2">Подсказка: {currentExercise.hint}</p>
+                <p className="text-sm text-muted-foreground mt-2 break-words">Подсказка: {currentExercise.hint}</p>
               )}
             </div>
             <Input
@@ -225,6 +225,7 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
               onChange={(e) => handleAnswerChange(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleNext()}
               autoFocus
+              className="w-full"
             />
           </div>
         );
@@ -236,8 +237,8 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
       case 'word_formation':
         return (
           <div className="space-y-4">
-            <div className="text-center p-6 bg-muted rounded-lg">
-              <p className="text-2xl font-bold mb-2">{currentExercise.question}</p>
+            <div className="text-center p-4 sm:p-6 bg-muted rounded-lg">
+              <p className="text-xl sm:text-2xl font-bold mb-2 break-words">{currentExercise.question}</p>
               {currentExercise.transcription && (
                 <p className="text-sm text-muted-foreground mb-1">[{currentExercise.transcription}]</p>
               )}
@@ -253,17 +254,17 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
                 {currentExercise.options?.map((option, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                    className={`flex items-center space-x-2 sm:space-x-3 p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-all ${
                       userAnswers[currentIndex] === option
                         ? 'border-primary bg-primary/5'
                         : 'border-border hover:border-primary/50'
                     }`}
                     onClick={() => handleAnswerChange(option)}
                   >
-                    <RadioGroupItem value={option} id={`option-${idx}`} />
+                    <RadioGroupItem value={option} id={`option-${idx}`} className="flex-shrink-0" />
                     <Label
                       htmlFor={`option-${idx}`}
-                      className="flex-1 cursor-pointer text-base"
+                      className="flex-1 cursor-pointer text-sm sm:text-base break-words min-w-0"
                     >
                       {option}
                     </Label>
@@ -282,22 +283,22 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <Button variant="default" size="default" onClick={onBack} className="bg-primary hover:bg-primary/90">
-            <Icon name="ArrowLeft" size={20} className="mr-2" />
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between max-w-full">
+          <Button variant="default" size="sm" onClick={onBack} className="bg-primary hover:bg-primary/90 flex-shrink-0">
+            <Icon name="ArrowLeft" size={18} className="sm:mr-2" />
             <span className="hidden sm:inline">Назад</span>
           </Button>
           <div className="text-sm font-medium">
             {currentIndex + 1} / {exercises.length}
           </div>
-          <div className="w-20" />
+          <div className="w-14 sm:w-20 flex-shrink-0" />
         </div>
-        <div className="container mx-auto px-4 pb-2">
+        <div className="container mx-auto px-3 sm:px-4 pb-2 max-w-full">
           <Progress value={progress} className="h-1.5" />
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-2xl">
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-2xl">
         <Card className="border-0 shadow-none sm:border sm:shadow-sm">
           <CardContent className="p-4 sm:p-6">
             {renderExerciseContent()}
@@ -306,8 +307,8 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
       </main>
 
       <footer className="border-t bg-card/50 backdrop-blur-sm sticky bottom-0">
-        <div className="container mx-auto px-4 py-3 max-w-2xl">
-          <div className="flex gap-2">
+        <div className="container mx-auto px-3 sm:px-4 py-3 max-w-2xl">
+          <div className="flex gap-2 max-w-full">
             <Button
               variant="outline"
               onClick={handlePrevious}

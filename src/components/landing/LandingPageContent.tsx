@@ -45,25 +45,25 @@ const LandingPageContent = ({ onShowModeDialog }: LandingPageContentProps) => {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/10 to-background z-0"></div>
         
-        <div className="container mx-auto px-4 py-20 relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+        <div className="container mx-auto px-3 sm:px-4 py-12 sm:py-20 relative z-10 max-w-full">
+          <div className="grid md:grid-cols-2 gap-8 sm:gap-12 items-center max-w-6xl mx-auto">
             <div className="text-center md:text-left opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
               <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full backdrop-blur-sm">
                 <span className="text-primary font-medium text-sm">Путь важнее цели ✨</span>
               </div>
               
-              <h1 className="text-5xl md:text-7xl font-display font-bold text-foreground mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+              <h1 className="text-3xl sm:text-5xl md:text-7xl font-display font-bold text-foreground mb-4 sm:mb-6 leading-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70 break-words">
                 ShagToSpeak
               </h1>
               
-              <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
+              <p className="text-base sm:text-xl md:text-2xl text-muted-foreground mb-6 sm:mb-8 leading-relaxed break-words">
                 Изучайте английский шаг за шагом. Добавляйте слова, выполняйте упражнения и наслаждайтесь процессом.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Button 
                   size="lg" 
-                  className="text-lg px-8 py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 transform"
+                  className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 shadow-lg hover:shadow-xl transition-all hover:scale-105 transform w-full sm:w-auto"
                   onClick={onShowModeDialog}
                 >
                   Начать бесплатно
@@ -100,18 +100,18 @@ const LandingPageContent = ({ onShowModeDialog }: LandingPageContentProps) => {
         </div>
       </section>
 
-      <section className="py-20 bg-accent/30">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
+      <section className="py-12 sm:py-20 bg-accent/30">
+        <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
+          <div className="text-center mb-8 sm:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold mb-3 sm:mb-4 break-words px-2">
               Почему ShagToSpeak?
             </h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto px-2 break-words">
               Мы создали инструмент, который делает изучение английского приятным и эффективным
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8">
             {features.map((feature, idx) => (
               <Card 
                 key={idx} 
@@ -131,18 +131,18 @@ const LandingPageContent = ({ onShowModeDialog }: LandingPageContentProps) => {
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
-            <h2 className="text-4xl md:text-5xl font-display font-bold mb-4">
+      <section className="py-12 sm:py-20">
+        <div className="container mx-auto px-3 sm:px-4 max-w-6xl">
+          <div className="text-center mb-8 sm:mb-16 opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards] [animation-delay:0.1s]">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold mb-3 sm:mb-4 break-words px-2">
               Как это работает
             </h2>
-            <p className="text-xl text-muted-foreground">
+            <p className="text-base sm:text-xl text-muted-foreground px-2 break-words">
               Три простых шага к изучению английского
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 relative">
             <div className="hidden md:block absolute top-1/4 left-1/4 right-1/4 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50 z-0 opacity-0 animate-[fadeIn_1s_ease-out_0.5s_forwards]"></div>
             
             {[

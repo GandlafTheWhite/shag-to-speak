@@ -71,28 +71,33 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
   return (
     <div className="min-h-screen">
       <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-display font-bold text-foreground">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex justify-between items-center max-w-full">
+          <h1 className="text-lg sm:text-2xl font-display font-bold text-foreground truncate">
             ShagToSpeak
           </h1>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{user.name}</span>
-              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+          <div className="flex items-center gap-1.5 sm:gap-4 flex-shrink-0">
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="text-sm font-medium truncate max-w-[120px]">{user.name}</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium whitespace-nowrap">
                 {user.status === 'free' ? 'Free' : 'Premium'}
               </span>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')}>
+            <div className="sm:hidden">
+              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                {user.status === 'free' ? 'F' : 'P'}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')} className="flex-shrink-0">
               <Icon name="Settings" size={18} />
             </Button>
-            <Button variant="ghost" size="sm" onClick={onLogout}>
+            <Button variant="ghost" size="sm" onClick={onLogout} className="flex-shrink-0">
               <Icon name="LogOut" size={18} />
             </Button>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-4xl animate-fade-in">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-12 max-w-4xl animate-fade-in">
         <TelegramLinkBanner user={user} onUpdate={updateUser} />
         
         {user.word_count > 0 && (
@@ -101,11 +106,11 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </div>
         )}
         
-        <div className="text-center mb-12 relative">
-          <h2 className="text-4xl font-display font-bold text-foreground mb-4">
+        <div className="text-center mb-8 sm:mb-12 relative">
+          <h2 className="text-2xl sm:text-4xl font-display font-bold text-foreground mb-3 sm:mb-4 px-2">
             Добро пожаловать, {user.name}! 🌟
           </h2>
-          <p className="text-lg text-muted-foreground mb-6">
+          <p className="text-base sm:text-lg text-muted-foreground mb-4 sm:mb-6 px-2">
             Ваш путь к английскому продолжается
           </p>
           
@@ -134,7 +139,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </p>
         </div>
 
-        <div className="grid gap-6 mb-8 md:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 mb-6 sm:mb-8 grid-cols-1 sm:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -168,7 +173,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
 
 
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           <button
             onClick={() => onNavigate('learn')}
             className="group flex flex-col items-center gap-4 p-6 rounded-2xl bg-card border-2 border-border hover:border-primary transition-all hover:shadow-xl hover:-translate-y-1"
