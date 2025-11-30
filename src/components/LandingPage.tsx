@@ -9,7 +9,7 @@ import ForgotPasswordDialog from './landing/ForgotPasswordDialog';
 import TelegramAuthDialog from './landing/TelegramAuthDialog';
 
 interface LandingPageProps {
-  onLogin: (user: User) => void;
+  onLogin: (user: User, token: string) => void;
 }
 
 const LandingPage = ({ onLogin }: LandingPageProps) => {
@@ -40,8 +40,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
     setIsLoading(true);
     try {
       const { user, token } = await apiClient.telegramBotAuth(code);
-      localStorage.setItem('auth_token', token);
-      onLogin(user);
+      onLogin(user, token);
       setShowTelegramAuth(false);
       toast({
         title: 'Вход выполнен!',
@@ -72,8 +71,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
           selectedPreferences
         );
         
-        localStorage.setItem('auth_token', token);
-        onLogin(user);
+        onLogin(user, token);
         
         toast({
           title: 'Регистрация успешна!',
@@ -82,8 +80,7 @@ const LandingPage = ({ onLogin }: LandingPageProps) => {
       } else {
         const { user, token } = await apiClient.login(email, password);
         
-        localStorage.setItem('auth_token', token);
-        onLogin(user);
+        onLogin(user, token);
         
         toast({
           title: 'Вход выполнен!',

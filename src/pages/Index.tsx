@@ -36,8 +36,13 @@ const Index = () => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('shagtospeak_user');
-    if (storedUser) {
+    const storedToken = localStorage.getItem('auth_token');
+    
+    if (storedUser && storedToken) {
       const userData = JSON.parse(storedUser);
+      
+      apiClient.setAuth(userData.id, storedToken);
+      
       setUser(userData);
       
       if (userData.profile_completed === false) {
@@ -49,9 +54,12 @@ const Index = () => {
     }
   }, []);
 
-  const handleLogin = (userData: User) => {
+  const handleLogin = (userData: User, token: string) => {
+    apiClient.setAuth(userData.id, token);
+    
     setUser(userData);
     localStorage.setItem('shagtospeak_user', JSON.stringify(userData));
+    localStorage.setItem('auth_token', token);
     
     if (userData.profile_completed === false) {
       setShowProfileSetup(true);
@@ -61,8 +69,11 @@ const Index = () => {
   };
 
   const handleLogout = () => {
+    apiClient.clearAuth();
+    
     setUser(null);
     localStorage.removeItem('shagtospeak_user');
+    localStorage.removeItem('auth_token');
     setCurrentPage('landing');
   };
 
