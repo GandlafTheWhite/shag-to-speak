@@ -42,35 +42,59 @@ def call_ai_api(prompt: str, system_message: str = None) -> Dict[str, Any]:
     """Call GENAPI for AI-powered exercise generation and validation"""
     api_key = os.environ.get('GENAPI_KEY')
     if not api_key:
+        print('[EXERCISES] ERROR: GENAPI_KEY not configured')
         return {'error': 'AI API not configured'}
     
     try:
+        full_prompt = f"{system_message or 'You are a language learning assistant.'}\n\n{prompt}"
+        
         response = requests.post(
-            'https://api.vsegpt.ru/v1/chat/completions',
+            'https://api.gen-api.ru/api/v1/networks/o1-mini',
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
             },
             json={
-                'model': 'openai/gpt-4o-mini',
-                'messages': [
-                    {'role': 'system', 'content': system_message or 'You are a language learning assistant.'},
-                    {'role': 'user', 'content': prompt}
-                ],
-                'temperature': 0.7,
-                'max_tokens': 500
+                'is_sync': True,
+                'messages': [{
+                    'role': 'user',
+                    'content': full_prompt
+                }],
+                'model': 'o1-mini-2024-09-12',
+                'stream': False
             },
-            timeout=10
+            timeout=15
         )
         
         if response.status_code == 200:
             result = response.json()
-            content = result['choices'][0]['message']['content']
-            return json.loads(content)
+            content = None
+            
+            if 'response' in result and len(result['response']) > 0:
+                content = result['response'][0]['message']['content']
+            elif 'output' in result and 'choices' in result['output']:
+                content = result['output']['choices'][0]['message']['content']
+            
+            if not content:
+                error_msg = 'AI API returned unexpected format'
+                print(f'[EXERCISES] {error_msg}')
+                return {'error': error_msg}
+            
+            content = content.strip()
+            parsed = json.loads(content)
+            return parsed
         else:
-            return {'error': f'AI API error: {response.status_code}'}
+            error_msg = f'AI API error: {response.status_code}'
+            print(f'[EXERCISES] {error_msg}')
+            return {'error': error_msg}
+    except json.JSONDecodeError as e:
+        error_msg = f'JSON parse error: {str(e)}'
+        print(f'[EXERCISES] {error_msg}')
+        return {'error': error_msg}
     except Exception as e:
-        return {'error': str(e)}
+        error_msg = f'AI API exception: {str(e)}'
+        print(f'[EXERCISES] {error_msg}')
+        return {'error': error_msg}
 
 def generate_word_metadata_inline(english_word: str) -> Dict[str, str]:
     """Generate metadata for a word using AI API (inline during exercise generation)"""
@@ -96,26 +120,41 @@ Return ONLY JSON, no extra text."""
 
     try:
         response = requests.post(
-            'https://api.vsegpt.ru/v1/chat/completions',
+            'https://api.gen-api.ru/api/v1/networks/o1-mini',
             headers={
-                'Authorization': f'Bearer {api_key}',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
             },
             json={
-                'model': 'openai/gpt-4o-mini',
-                'messages': [
-                    {'role': 'system', 'content': 'You are a linguistics expert. Respond only with valid JSON.'},
-                    {'role': 'user', 'content': prompt}
-                ],
-                'temperature': 0.3,
-                'max_tokens': 200
+                'is_sync': True,
+                'messages': [{
+                    'role': 'user',
+                    'content': f'You are a linguistics expert. Respond only with valid JSON.\n\n{prompt}'
+                }],
+                'model': 'o1-mini-2024-09-12',
+                'stream': False
             },
-            timeout=10
+            timeout=15
         )
         
         if response.status_code == 200:
             data = response.json()
-            content = data['choices'][0]['message']['content'].strip()
+            content = None
+            
+            if 'response' in data and len(data['response']) > 0:
+                content = data['response'][0]['message']['content']
+            elif 'output' in data and 'choices' in data['output']:
+                content = data['output']['choices'][0]['message']['content']
+            
+            if not content:
+                return {
+                    'transcription': '',
+                    'part_of_speech': 'noun',
+                    'difficulty_level': 'intermediate',
+                    'example_sentence': ''
+                }
+            
+            content = content.strip()
             
             if content.startswith('```json'):
                 content = content[7:]
@@ -163,11 +202,12 @@ Return JSON:
     ai_result = call_ai_api(prompt, 'You are an English vocabulary expert. Return only valid JSON.')
     
     if 'error' in ai_result:
+        print(f"[EXERCISES] Synonym/Antonym generation failed for '{word['english_word']}': {ai_result['error']}")
         return {
             'word_id': word['id'],
             'type': 'synonym_antonym',
             'question': f"Find a synonym for: {word['english_word']}",
-            'options': [word['english_word'], 'example1', 'example2', 'example3'],
+            'options': [word['english_word'], 'similar', 'related', 'associated'],
             'correct_answer': word['english_word']
         }
     
@@ -219,11 +259,12 @@ Return JSON:
     ai_result = call_ai_api(prompt, 'You are an English teacher creating fill-in-the-blank exercises.')
     
     if 'error' in ai_result:
+        print(f"[EXERCISES] Fill-in-blank generation failed for '{word['english_word']}': {ai_result['error']}")
         return {
             'word_id': word['id'],
             'type': 'fill_blank',
             'question': f"Fill in the blank: The ___ is important.",
-            'options': [word['english_word'], 'option1', 'option2', 'option3'],
+            'options': [word['english_word'], 'thing', 'item', 'object'],
             'correct_answer': word['english_word']
         }
     
@@ -249,17 +290,18 @@ Return JSON:
     ai_result = call_ai_api(prompt, 'You are creating context matching exercises.')
     
     if 'error' in ai_result:
+        print(f"[EXERCISES] Context match generation failed for '{word['english_word']}': {ai_result['error']}")
         return {
             'word_id': word['id'],
             'type': 'context_match',
             'question': f"Which sentence correctly uses '{word['english_word']}'?",
             'options': [
-                f"This is a correct use of {word['english_word']}.",
-                "This is incorrect context 1.",
-                "This is incorrect context 2.",
-                "This is incorrect context 3."
+                f"I need to use {word['english_word']} properly.",
+                f"The {word['english_word']} is important.",
+                f"We should learn {word['english_word']}.",
+                f"Everyone knows {word['english_word']}."
             ],
-            'correct_answer': f"This is a correct use of {word['english_word']}."
+            'correct_answer': f"I need to use {word['english_word']} properly."
         }
     
     all_options = [ai_result['correct']] + ai_result['incorrect']
@@ -304,11 +346,12 @@ Return JSON:
     ai_result = call_ai_api(prompt, 'You are teaching English word formation.')
     
     if 'error' in ai_result:
+        print(f"[EXERCISES] Word formation generation failed for '{word['english_word']}': {ai_result['error']}")
         return {
             'word_id': word['id'],
             'type': 'word_formation',
             'question': f"What is the noun form of '{word['english_word']}'?",
-            'options': [word['english_word'], 'option1', 'option2', 'option3'],
+            'options': [word['english_word'], word['english_word'] + 'ness', word['english_word'] + 'tion', word['english_word'] + 'ing'],
             'correct_answer': word['english_word']
         }
     
