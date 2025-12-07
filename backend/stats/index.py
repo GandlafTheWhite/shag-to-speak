@@ -64,8 +64,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         cursor.execute(
             """SELECT COUNT(*) as total_exercises,
-                      SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_count
-               FROM t_p7147437_shag_to_speak.exercises 
+                      SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_count,
+                      AVG(time_spent_seconds) as avg_time,
+                      SUM(points_earned) as total_points_earned
+               FROM t_p7147437_shag_to_speak.exercise_history 
                WHERE user_id = %s""",
             (user_id,)
         )
@@ -74,7 +76,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         seven_days_ago = datetime.now() - timedelta(days=7)
         cursor.execute(
             """SELECT DATE(created_at) as date, COUNT(*) as count
-               FROM t_p7147437_shag_to_speak.exercises
+               FROM t_p7147437_shag_to_speak.exercise_history
                WHERE user_id = %s AND created_at >= %s
                GROUP BY DATE(created_at)
                ORDER BY date""",
@@ -83,14 +85,35 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         weekly_activity = cursor.fetchall()
         
         cursor.execute(
+            """SELECT exercise_type, COUNT(*) as count,
+                      SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct
+               FROM t_p7147437_shag_to_speak.exercise_history
+               WHERE user_id = %s
+               GROUP BY exercise_type
+               ORDER BY count DESC""",
+            (user_id,)
+        )
+        exercise_types = cursor.fetchall()
+        
+        cursor.execute(
+            """SELECT COUNT(DISTINCT DATE(created_at)) as unique_days
+               FROM t_p7147437_shag_to_speak.exercise_history
+               WHERE user_id = %s""",
+            (user_id,)
+        )
+        unique_days_result = cursor.fetchone()
+        unique_days_active = unique_days_result['unique_days'] or 0
+        
+        cursor.execute(
             """SELECT w.english_word, w.russian_translation, w.recall_count,
-                      COUNT(e.id) as total_attempts,
-                      SUM(CASE WHEN e.is_correct THEN 1 ELSE 0 END) as correct_attempts
+                      COUNT(eh.id) as total_attempts,
+                      SUM(CASE WHEN eh.is_correct THEN 1 ELSE 0 END) as correct_attempts
                FROM t_p7147437_shag_to_speak.words w
-               LEFT JOIN t_p7147437_shag_to_speak.exercises e ON w.id = e.word_id
+               LEFT JOIN t_p7147437_shag_to_speak.exercise_history eh ON w.id = eh.word_id
                WHERE w.user_id = %s
                GROUP BY w.id, w.english_word, w.russian_translation, w.recall_count
-               ORDER BY correct_attempts DESC, total_attempts DESC
+               HAVING COUNT(eh.id) > 0
+               ORDER BY total_attempts DESC, correct_attempts DESC
                LIMIT 10""",
             (user_id,)
         )
@@ -110,6 +133,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         total_exercises = exercise_stats['total_exercises'] or 0
         correct_count = exercise_stats['correct_count'] or 0
         accuracy = round((correct_count / total_exercises * 100), 1) if total_exercises > 0 else 0
+        avg_time = round(exercise_stats['avg_time'] or 0, 1)
+        total_points_from_exercises = exercise_stats['total_points_earned'] or 0
         
         activity_data = []
         for day in weekly_activity:
@@ -131,6 +156,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'accuracy': word_accuracy
             })
         
+        exercise_types_data = []
+        for ex_type in exercise_types:
+            total_type = ex_type['count'] or 0
+            correct_type = ex_type['correct'] or 0
+            type_accuracy = round((correct_type / total_type * 100), 1) if total_type > 0 else 0
+            
+            exercise_types_data.append({
+                'type': ex_type['exercise_type'],
+                'count': total_type,
+                'accuracy': type_accuracy
+            })
+        
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -143,10 +180,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'exercises': {
                     'total': total_exercises,
                     'correct': correct_count,
-                    'accuracy': accuracy
+                    'accuracy': accuracy,
+                    'avg_time': avg_time,
+                    'total_points': total_points_from_exercises,
+                    'by_type': exercise_types_data
                 },
                 'activity': {
                     'days_active': days_active,
+                    'unique_days_active': unique_days_active,
                     'weekly': activity_data
                 },
                 'top_words': top_words_data

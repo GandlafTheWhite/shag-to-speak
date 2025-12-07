@@ -15,16 +15,10 @@
       },
       "expectedStatus": 200,
       "expectedBody": {
-        "words": {
-          "total": "number",
-          "learning": "number",
-          "done": "number"
-        },
-        "exercises": {
-          "total": "number",
-          "accuracy": "number"
-        },
-        "activity": "object"
+        "words": "object",
+        "exercises": "object",
+        "activity": "object",
+        "top_words": "array"
       },
       "bodyMatcher": "partial"
     }

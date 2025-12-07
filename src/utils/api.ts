@@ -86,9 +86,17 @@ export interface Stats {
     total: number;
     correct: number;
     accuracy: number;
+    avg_time?: number;
+    total_points?: number;
+    by_type?: Array<{
+      type: string;
+      count: number;
+      accuracy: number;
+    }>;
   };
   activity: {
     days_active: number;
+    unique_days_active?: number;
     weekly: Array<{ date: string; count: number }>;
   };
   top_words: Array<{
