@@ -191,8 +191,243 @@ Return ONLY JSON, no extra text."""
         'example_sentence': ''
     }
 
+def generate_exercises_batch(words: List[Dict[str, Any]], exercise_types: List[str], user_id: int, cursor) -> List[Dict[str, Any]]:
+    """Generate all exercises in one AI batch request"""
+    
+    ai_needed_types = ['synonym_antonym', 'fill_blank', 'context_match', 'word_formation']
+    words_needing_ai = []
+    exercise_assignments = []
+    
+    for word in words:
+        exercise_type = random.choice(exercise_types)
+        exercise_assignments.append({
+            'word': word,
+            'type': exercise_type
+        })
+        
+        if exercise_type in ai_needed_types:
+            words_needing_ai.append({
+                'word_id': word['id'],
+                'english_word': word['english_word'],
+                'russian_translation': word['russian_translation'],
+                'example_sentence': word.get('example_sentence', ''),
+                'type': exercise_type
+            })
+    
+    ai_generated = {}
+    
+    if words_needing_ai:
+        prompt = f"""Generate exercises for these English words. For EACH word, create the specified exercise type.
+
+Words and exercise types:
+{json.dumps(words_needing_ai, ensure_ascii=False, indent=2)}
+
+Exercise type requirements:
+- synonym_antonym: Provide 1 correct synonym OR antonym, and 3 incorrect options
+- fill_blank: Create a sentence with blank, provide 3 incorrect word options
+- context_match: Create 1 correct context sentence and 3 incorrect context sentences
+- word_formation: Create word transformation task with 1 correct answer and 3 incorrect options
+
+Return ONLY valid JSON in this exact format:
+{{
+  "exercises": [
+    {{
+      "word_id": 123,
+      "type": "synonym_antonym",
+      "task_type": "synonym",
+      "correct": "word",
+      "options": ["wrong1", "wrong2", "wrong3"]
+    }},
+    {{
+      "word_id": 124,
+      "type": "fill_blank",
+      "sentence": "The ___ is important.",
+      "options": ["wrong1", "wrong2", "wrong3"]
+    }},
+    {{
+      "word_id": 125,
+      "type": "context_match",
+      "correct": "Correct sentence here",
+      "incorrect": ["wrong1", "wrong2", "wrong3"]
+    }},
+    {{
+      "word_id": 126,
+      "type": "word_formation",
+      "task": "Transform X to Y form",
+      "correct": "answer",
+      "options": ["wrong1", "wrong2", "wrong3"]
+    }}
+  ]
+}}"""
+        
+        ai_result = call_ai_api(prompt, 'You are an English teacher creating vocabulary exercises. Return only valid JSON.')
+        
+        if 'error' not in ai_result and 'exercises' in ai_result:
+            for ex in ai_result['exercises']:
+                ai_generated[ex['word_id']] = ex
+    
+    exercises = []
+    
+    for assignment in exercise_assignments:
+        word = assignment['word']
+        exercise_type = assignment['type']
+        
+        if exercise_type == 'translation':
+            exercises.append({
+                'word_id': word['id'],
+                'type': 'translation',
+                'question': word['english_word'],
+                'transcription': word.get('transcription', ''),
+                'part_of_speech': word.get('part_of_speech', ''),
+                'correct_answer': word['russian_translation']
+            })
+        
+        elif exercise_type == 'multiple_choice':
+            cursor.execute(
+                """SELECT russian_translation 
+                   FROM t_p7147437_shag_to_speak.words 
+                   WHERE user_id = %s AND id != %s
+                   ORDER BY RANDOM()
+                   LIMIT 3""",
+                (user_id, word['id'])
+            )
+            wrong_answers = [w['russian_translation'] for w in cursor.fetchall()]
+            options = [word['russian_translation']] + wrong_answers
+            random.shuffle(options)
+            
+            exercises.append({
+                'word_id': word['id'],
+                'type': 'multiple_choice',
+                'question': word['english_word'],
+                'transcription': word.get('transcription', ''),
+                'part_of_speech': word.get('part_of_speech', ''),
+                'options': options,
+                'correct_answer': word['russian_translation']
+            })
+        
+        elif exercise_type == 'sentence_construction':
+            exercises.append({
+                'word_id': word['id'],
+                'type': 'sentence_construction',
+                'question': f"Write a sentence using the word: {word['english_word']}",
+                'word': word['english_word'],
+                'hint': word['russian_translation'],
+                'correct_answer': ''
+            })
+        
+        elif exercise_type == 'reverse_translation':
+            exercises.append({
+                'word_id': word['id'],
+                'type': 'reverse_translation',
+                'question': f"Translate to English: {word['russian_translation']}",
+                'correct_answer': word['english_word']
+            })
+        
+        elif exercise_type == 'synonym_antonym':
+            ai_ex = ai_generated.get(word['id'])
+            if ai_ex:
+                all_options = [ai_ex['correct']] + ai_ex['options']
+                random.shuffle(all_options)
+                task_label = 'synonym' if ai_ex.get('task_type') == 'synonym' else 'antonym'
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'synonym_antonym',
+                    'question': f"Find a {task_label} for: {word['english_word']}",
+                    'options': all_options,
+                    'correct_answer': ai_ex['correct']
+                })
+            else:
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'synonym_antonym',
+                    'question': f"Find a synonym for: {word['english_word']}",
+                    'options': [word['english_word'], 'similar', 'related', 'associated'],
+                    'correct_answer': word['english_word']
+                })
+        
+        elif exercise_type == 'fill_blank':
+            ai_ex = ai_generated.get(word['id'])
+            if ai_ex and 'sentence' in ai_ex:
+                all_options = [word['english_word']] + ai_ex['options']
+                random.shuffle(all_options)
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'fill_blank',
+                    'question': f"Fill in the blank: {ai_ex['sentence']}",
+                    'options': all_options,
+                    'correct_answer': word['english_word']
+                })
+            else:
+                example = word.get('example_sentence', '')
+                if example and word['english_word'].lower() in example.lower():
+                    sentence_with_blank = example.replace(word['english_word'], '___').replace(word['english_word'].lower(), '___')
+                    exercises.append({
+                        'word_id': word['id'],
+                        'type': 'fill_blank',
+                        'question': f"Fill in the blank: {sentence_with_blank}",
+                        'options': [word['english_word'], 'thing', 'item', 'object'],
+                        'correct_answer': word['english_word']
+                    })
+                else:
+                    exercises.append({
+                        'word_id': word['id'],
+                        'type': 'fill_blank',
+                        'question': f"Fill in the blank: The ___ is important.",
+                        'options': [word['english_word'], 'thing', 'item', 'object'],
+                        'correct_answer': word['english_word']
+                    })
+        
+        elif exercise_type == 'context_match':
+            ai_ex = ai_generated.get(word['id'])
+            if ai_ex:
+                all_options = [ai_ex['correct']] + ai_ex['incorrect']
+                random.shuffle(all_options)
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'context_match',
+                    'question': f"Which sentence correctly uses '{word['english_word']}'?",
+                    'options': all_options,
+                    'correct_answer': ai_ex['correct']
+                })
+            else:
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'context_match',
+                    'question': f"Which sentence correctly uses '{word['english_word']}'?",
+                    'options': [
+                        f"I need to use {word['english_word']} properly.",
+                        f"The {word['english_word']} is important.",
+                        f"We should learn {word['english_word']}.",
+                        f"Everyone knows {word['english_word']}."
+                    ],
+                    'correct_answer': f"I need to use {word['english_word']} properly."
+                })
+        
+        elif exercise_type == 'word_formation':
+            ai_ex = ai_generated.get(word['id'])
+            if ai_ex:
+                all_options = [ai_ex['correct']] + ai_ex['options']
+                random.shuffle(all_options)
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'word_formation',
+                    'question': ai_ex['task'],
+                    'options': all_options,
+                    'correct_answer': ai_ex['correct']
+                })
+            else:
+                exercises.append({
+                    'word_id': word['id'],
+                    'type': 'word_formation',
+                    'question': f"What is the noun form of '{word['english_word']}'?",
+                    'options': [word['english_word'], word['english_word'] + 'ness', word['english_word'] + 'tion', word['english_word'] + 'ing'],
+                    'correct_answer': word['english_word']
+                })
+    
+    return exercises
+
 def generate_synonym_antonym(word: Dict[str, Any]) -> Dict[str, Any]:
-    """Generate synonym/antonym exercise using AI"""
+    """DEPRECATED: Generate synonym/antonym exercise using AI"""
     prompt = f"""For the English word "{word['english_word']}" (Russian: {word['russian_translation']}):
 Generate 1 correct synonym/antonym and 3 incorrect options.
 
@@ -366,8 +601,41 @@ Return JSON:
         'correct_answer': ai_result['correct']
     }
 
+def validate_open_answers_batch(answers_to_validate: List[Dict[str, Any]]) -> Dict[int, bool]:
+    """Validate multiple open-ended answers in one AI batch request"""
+    if not answers_to_validate:
+        return {}
+    
+    prompt = f"""Check if these answers are correct. For EACH answer, determine if it's valid.
+
+Answers to check:
+{json.dumps(answers_to_validate, ensure_ascii=False, indent=2)}
+
+Rules:
+- sentence_construction: Check if sentence uses the word correctly and is grammatically valid
+- reverse_translation: Check if answer matches the target word (allow minor spelling mistakes)
+
+Return ONLY valid JSON:
+{{
+  "results": [
+    {{"word_id": 123, "is_correct": true, "reason": "short explanation"}},
+    {{"word_id": 124, "is_correct": false, "reason": "short explanation"}}
+  ]
+}}"""
+    
+    ai_result = call_ai_api(prompt, 'You are checking language learning exercises. Be lenient with minor errors.')
+    
+    if 'error' in ai_result or 'results' not in ai_result:
+        return {}
+    
+    validation_results = {}
+    for result in ai_result['results']:
+        validation_results[result['word_id']] = result['is_correct']
+    
+    return validation_results
+
 def validate_open_answer(word: str, user_answer: str, exercise_type: str) -> bool:
-    """Validate open-ended answers using AI"""
+    """DEPRECATED: Validate open-ended answers using AI (use batch version instead)"""
     if exercise_type == 'sentence_construction':
         prompt = f"""Check if this sentence correctly uses the word "{word}":
 Sentence: "{user_answer}"
@@ -431,7 +699,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """SELECT status, daily_exercises_count, last_exercise_date, exercise_difficulty 
-                   FROM users 
+                   FROM t_p7147437_shag_to_speak.users 
                    WHERE id = %s""",
                 (user_id,)
             )
@@ -466,7 +734,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             query = """SELECT id, english_word, russian_translation, category, 
                               transcription, part_of_speech, example_sentence, difficulty_level
-                       FROM words 
+                       FROM t_p7147437_shag_to_speak.words 
                        WHERE user_id = %s AND status = 'learning'"""
             params = [user_id]
             
@@ -479,30 +747,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cursor.execute(query, params)
             words = cursor.fetchall()
             
-            for word in words:
-                if not word.get('transcription') or not word.get('part_of_speech'):
-                    metadata = generate_word_metadata_inline(word['english_word'])
-                    cursor.execute("""
-                        UPDATE words 
-                        SET transcription = %s,
-                            part_of_speech = %s,
-                            difficulty_level = %s,
-                            example_sentence = %s
-                        WHERE id = %s
-                    """, (
-                        metadata['transcription'],
-                        metadata['part_of_speech'],
-                        metadata['difficulty_level'],
-                        metadata.get('example_sentence', word.get('example_sentence')),
-                        word['id']
-                    ))
-                    word['transcription'] = metadata['transcription']
-                    word['part_of_speech'] = metadata['part_of_speech']
-                    word['difficulty_level'] = metadata['difficulty_level']
-                    word['example_sentence'] = metadata.get('example_sentence', word.get('example_sentence'))
-            
-            conn.commit()
-            
             if not words:
                 return {
                     'statusCode': 200,
@@ -512,54 +756,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             available_types = EXERCISE_TYPES_BY_DIFFICULTY[difficulty]
-            exercises = []
             
-            for word in words:
-                exercise_type = random.choice(available_types)
-                
-                if exercise_type == 'translation':
-                    exercises.append({
-                        'word_id': word['id'],
-                        'type': 'translation',
-                        'question': word['english_word'],
-                        'transcription': word.get('transcription'),
-                        'part_of_speech': word.get('part_of_speech'),
-                        'correct_answer': word['russian_translation']
-                    })
-                elif exercise_type == 'multiple_choice':
-                    cursor.execute(
-                        """SELECT russian_translation 
-                           FROM words 
-                           WHERE user_id = %s AND id != %s
-                           ORDER BY RANDOM()
-                           LIMIT 3""",
-                        (user_id, word['id'])
-                    )
-                    wrong_answers = [w['russian_translation'] for w in cursor.fetchall()]
-                    options = [word['russian_translation']] + wrong_answers
-                    random.shuffle(options)
-                    
-                    exercises.append({
-                        'word_id': word['id'],
-                        'type': 'multiple_choice',
-                        'question': word['english_word'],
-                        'transcription': word.get('transcription'),
-                        'part_of_speech': word.get('part_of_speech'),
-                        'options': options,
-                        'correct_answer': word['russian_translation']
-                    })
-                elif exercise_type == 'synonym_antonym':
-                    exercises.append(generate_synonym_antonym(word))
-                elif exercise_type == 'fill_blank':
-                    exercises.append(generate_fill_blank(word))
-                elif exercise_type == 'context_match':
-                    exercises.append(generate_context_match(word))
-                elif exercise_type == 'sentence_construction':
-                    exercises.append(generate_sentence_construction(word))
-                elif exercise_type == 'reverse_translation':
-                    exercises.append(generate_reverse_translation(word))
-                elif exercise_type == 'word_formation':
-                    exercises.append(generate_word_formation(word))
+            exercises = generate_exercises_batch(words, available_types, user_id, cursor)
             
             return {
                 'statusCode': 200,
@@ -589,7 +787,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             cursor.execute(
                 """SELECT status, daily_exercises_count, last_exercise_date, 
                           current_streak, longest_streak, last_exercise_date as streak_date
-                   FROM users 
+                   FROM t_p7147437_shag_to_speak.users 
                    WHERE id = %s""",
                 (user_id,)
             )
@@ -623,6 +821,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             correct_count = 0
             total_points = 0
             
+            open_answers_to_validate = []
+            for answer in answers:
+                exercise_type = answer.get('type', 'translation')
+                if exercise_type in ['sentence_construction', 'reverse_translation']:
+                    word_id = answer.get('word_id')
+                    user_answer = answer.get('answer', '').strip()
+                    
+                    cursor.execute(
+                        """SELECT english_word FROM t_p7147437_shag_to_speak.words WHERE id = %s""",
+                        (word_id,)
+                    )
+                    word = cursor.fetchone()
+                    
+                    if word:
+                        open_answers_to_validate.append({
+                            'word_id': word_id,
+                            'word': word['english_word'],
+                            'user_answer': user_answer,
+                            'type': exercise_type
+                        })
+            
+            validation_results = validate_open_answers_batch(open_answers_to_validate)
+            
             for answer in answers:
                 word_id = answer.get('word_id')
                 user_answer = answer.get('answer', '').strip()
@@ -630,7 +851,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 cursor.execute(
                     """SELECT english_word, russian_translation 
-                       FROM words WHERE id = %s""",
+                       FROM t_p7147437_shag_to_speak.words WHERE id = %s""",
                     (word_id,)
                 )
                 word = cursor.fetchone()
@@ -639,7 +860,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     continue
                 
                 if exercise_type in ['sentence_construction', 'reverse_translation']:
-                    is_correct = validate_open_answer(word['english_word'], user_answer, exercise_type)
+                    is_correct = validation_results.get(word_id, False)
                     correct_answer = word['english_word'] if exercise_type == 'reverse_translation' else 'Valid sentence'
                 else:
                     correct_answer = answer.get('correct_answer', word['russian_translation'])
@@ -672,7 +893,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     points = 0
                 
                 cursor.execute(
-                    """INSERT INTO exercise_history 
+                    """INSERT INTO t_p7147437_shag_to_speak.exercise_history 
                        (user_id, word_id, exercise_type, difficulty_level, is_correct, 
                         time_spent_seconds, points_earned, user_answer, correct_answer)
                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
@@ -681,7 +902,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 )
                 
                 cursor.execute(
-                    """UPDATE words 
+                    """UPDATE t_p7147437_shag_to_speak.words 
                        SET recall_count = recall_count + 1,
                            last_recall_date = CURRENT_TIMESTAMP
                        WHERE id = %s""",
@@ -696,7 +917,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 })
             
             cursor.execute(
-                """UPDATE users 
+                """UPDATE t_p7147437_shag_to_speak.users 
                    SET daily_exercises_count = %s,
                        last_exercise_date = %s,
                        total_points = total_points + %s,
