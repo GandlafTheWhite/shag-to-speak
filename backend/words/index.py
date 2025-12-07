@@ -42,26 +42,25 @@ def check_spelling_and_enrich_batch(words_list: List[str]) -> Dict[str, Dict[str
         } for word in words_list}
     
     words_text = '", "'.join(words_list)
-    prompt = f'''Проверь орфографию и обогати следующие английские слова: "{words_text}"
+    categories_sample = ', '.join(CATEGORIES[:15])
+    prompt = f'''Check spelling and enrich these English words: "{words_text}"
 
-Для КАЖДОГО слова верни JSON объект со следующими полями:
-1. corrected_word - исправленное написание слова (если ошибок нет, вернуть оригинальное слово)
-2. was_corrected - true/false (было ли исправлено)
-3. translation - краткий русский перевод (1-3 слова)
-4. examples - массив из 3 коротких примеров использования на английском
-5. category - одна категория из списка: {', '.join(CATEGORIES[:20])}
-6. transcription - IPA транскрипция (например /wɜːrd/)
-7. part_of_speech - часть речи (noun/verb/adjective/adverb/preposition/etc)
-8. difficulty_level - уровень сложности (beginner/intermediate/advanced/master)
-9. example_sentence - естественное предложение на английском с этим словом
+For EACH word return JSON with these fields:
+1. corrected_word - corrected spelling (if no error, return original word in lowercase)
+2. was_corrected - true if spelling was fixed, false otherwise
+3. translation - brief Russian translation (1-3 words)
+4. examples - array of 3 short English sentences using this word
+5. category - one from: {categories_sample}, or uncategorized
+6. transcription - IPA format like /wɜːrd/
+7. part_of_speech - noun, verb, adjective, adverb, preposition, etc
+8. difficulty_level - beginner, intermediate, advanced, or master
+9. example_sentence - natural English sentence with this word
 
-Верни ТОЛЬКО валидный JSON в формате:
+Return ONLY valid JSON (no extra text):
 {{
-  "word1": {{...}},
-  "word2": {{...}}
-}}
-
-Без дополнительного текста, только JSON.'''
+  "original_word": {{...}},
+  "another_word": {{...}}
+}}'''
     
     try:
         response = requests.post(
@@ -81,11 +80,14 @@ def check_spelling_and_enrich_batch(words_list: List[str]) -> Dict[str, Dict[str
         
         if response.status_code == 200:
             data = response.json()
+            print(f'GENAPI raw response: {json.dumps(data)}')
             content = None
             if 'response' in data and len(data['response']) > 0:
                 content = data['response'][0]['message']['content']
             elif 'output' in data and 'choices' in data['output']:
                 content = data['output']['choices'][0]['message']['content']
+            
+            print(f'GENAPI content extracted: {content[:500] if content else "None"}...')
             
             if content:
                 content_clean = content.strip()
@@ -149,6 +151,7 @@ def check_spelling_and_enrich_batch(words_list: List[str]) -> Dict[str, Dict[str
                 
                 return enriched_data
         
+        print(f'GENAPI response parsing failed or status != 200, status: {response.status_code}')
         return {word: {
             'corrected_word': word,
             'was_corrected': False,

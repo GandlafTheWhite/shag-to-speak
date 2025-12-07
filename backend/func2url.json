@@ -7,7 +7,6 @@
   "telegram-webhook": "https://functions.poehali.dev/e09a4bc7-f64b-4892-8115-71c6adc8bd2c",
   "telegram-bot-auth": "https://functions.poehali.dev/11cbde8f-4051-4ebf-8487-67996dc71ef3",
   "categorize-words": "https://functions.poehali.dev/e04e5f5d-cc07-4dd2-b55e-690bf8775c20",
-  "generate-word-details": "https://functions.poehali.dev/5b11fbea-99aa-47a8-8e89-a87ee104dbf7",
   "word-sets": "https://functions.poehali.dev/a50df754-52e7-423a-a83b-fe50339a4d73",
   "ai-words": "https://functions.poehali.dev/f2e3df61-25fc-4fad-b66c-a5f08c97df77",
   "auth": "https://functions.poehali.dev/ce741311-6fd7-45a8-9770-f5d6979da050",
