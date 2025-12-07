@@ -33,16 +33,12 @@ export const useSpellCorrection = (
 
   const handleWordSelect = (selectedWord: string, originalWord: string) => {
     console.log('[handleWordSelect] User selected:', selectedWord, 'for original:', originalWord);
-    console.log('[handleWordSelect] Current corrections state:', pendingCorrections);
-    console.log('[handleWordSelect] Current index:', currentCorrectionIndex);
     
     setIsProcessingCorrection(true);
     
-    setCorrectionDecisions(prev => {
-      const updated = { ...prev, [originalWord]: selectedWord };
-      console.log('[handleWordSelect] Updated correctionDecisions:', updated);
-      return updated;
-    });
+    const updatedDecisions = { ...correctionDecisions, [originalWord]: selectedWord };
+    console.log('[handleWordSelect] Updated decisions:', updatedDecisions);
+    setCorrectionDecisions(updatedDecisions);
     
     setTimeout(() => {
       setIsProcessingCorrection(false);
@@ -50,8 +46,8 @@ export const useSpellCorrection = (
         console.log('[handleWordSelect] Moving to next correction');
         setCurrentCorrectionIndex(currentCorrectionIndex + 1);
       } else {
-        console.log('[handleWordSelect] Last word processed, finalizing...');
-        finalizeCorrectedWords();
+        console.log('[handleWordSelect] Last word processed, finalizing with decisions:', updatedDecisions);
+        finalizeCorrectedWords(updatedDecisions);
       }
     }, 300);
   };
@@ -82,13 +78,14 @@ export const useSpellCorrection = (
     }
   };
 
-  const finalizeCorrectedWords = async () => {
+  const finalizeCorrectedWords = async (decisionsToUse?: Record<string, string>) => {
     try {
       setIsLoading(true);
       
+      const decisions = decisionsToUse || correctionDecisions;
       console.log('[SpellCorrection] DEBUG - pendingWordsInput:', pendingWordsInput);
-      console.log('[SpellCorrection] DEBUG - correctionDecisions:', correctionDecisions);
-      console.log('[SpellCorrection] DEBUG - correctionDecisions keys:', Object.keys(correctionDecisions));
+      console.log('[SpellCorrection] DEBUG - using decisions:', decisions);
+      console.log('[SpellCorrection] DEBUG - decisions keys:', Object.keys(decisions));
       
       const finalWords: string[] = [];
       const updatedEnrichedData: any = {};
@@ -96,16 +93,16 @@ export const useSpellCorrection = (
       for (const originalWord of pendingWordsInput) {
         const lowerOriginal = originalWord.toLowerCase();
         
-        const selectedWord = correctionDecisions[originalWord] 
-          || correctionDecisions[lowerOriginal] 
+        const selectedWord = decisions[originalWord] 
+          || decisions[lowerOriginal] 
           || originalWord;
         
-        console.log(`[SpellCorrection] DEBUG - Processing: "${originalWord}" -> decision: "${correctionDecisions[originalWord]}" -> selected: "${selectedWord}"`);
+        console.log(`[SpellCorrection] DEBUG - Processing: "${originalWord}" -> decision: "${decisions[originalWord]}" -> selected: "${selectedWord}"`);
         
         const selectedWordLower = selectedWord.toLowerCase();
         finalWords.push(selectedWordLower);
         
-        if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
+        if (decisions[originalWord] && decisions[originalWord] !== originalWord) {
           console.log('[SpellCorrection] Fetching enrichment for corrected word:', selectedWord);
           const correctedEnrichment = await fetchEnrichmentForWord(selectedWord);
           console.log('[SpellCorrection] Received enrichment:', correctedEnrichment);
