@@ -20,14 +20,14 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Add new words",
+      "name": "Add new words with spell-check and enrichment",
       "method": "POST",
       "path": "/",
       "headers": {
         "X-User-Id": "1"
       },
       "body": {
-        "words": ["hello", "world"]
+        "words": ["hello"]
       },
       "expectedStatus": 200,
       "expectedBody": {

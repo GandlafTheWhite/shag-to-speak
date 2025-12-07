@@ -35,41 +35,7 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     loadWords();
   }, []);
 
-  const generateWordDetailsInBackground = async (wordId: number) => {
-    try {
-      console.log(`Starting background generation for word ${wordId}`);
-      const updatedWord = await apiClient.generateWordDetails(wordId);
-      console.log(`Generated word ${wordId}:`, updatedWord);
-      
-      setWords(prevWords => prevWords.map(w => 
-        w.id === wordId ? {
-          ...updatedWord,
-          is_generating: false
-        } : w
-      ));
-      
-      toast({
-        title: 'Слово обновлено!',
-        description: `"${updatedWord.english_word}" - перевод готов`
-      });
-    } catch (error) {
-      console.error('Failed to generate word details:', error);
-      setWords(prevWords => prevWords.map(w => 
-        w.id === wordId ? {
-          ...w,
-          russian_translation: 'Ошибка генерации',
-          examples: ['Попробуйте удалить и добавить слово заново'],
-          is_generating: false
-        } : w
-      ));
-      
-      toast({
-        title: 'Ошибка генерации',
-        description: error instanceof Error ? error.message : 'Не удалось сгенерировать перевод',
-        variant: 'destructive'
-      });
-    }
-  };
+
 
   const loadWords = async () => {
     try {
@@ -78,32 +44,19 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       const apiWords = await apiClient.getWords();
       console.log(`Loaded ${apiWords.length} words from API`);
       
-      const wordsToDisplay = apiWords.map(w => {
-        const isGenerating = w.russian_translation === '...';
-        return {
-          id: w.id,
-          english_word: w.english_word,
-          russian_translation: w.russian_translation,
-          examples: w.examples,
-          status: w.status,
-          recall_count: w.recall_count,
-          category: w.category || 'uncategorized',
-          is_generating: isGenerating
-        };
-      });
-      
-      const generatingWords = wordsToDisplay.filter(w => w.is_generating);
-      console.log(`Found ${generatingWords.length} words needing generation:`, generatingWords.map(w => w.english_word));
+      const wordsToDisplay = apiWords.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized',
+        is_generating: false
+      }));
       
       setWords(wordsToDisplay);
       updateUser({ word_count: wordsToDisplay.length });
-      
-      wordsToDisplay.forEach(word => {
-        if (word.is_generating) {
-          console.log(`Triggering generation for word ${word.id}: ${word.english_word}`);
-          generateWordDetailsInBackground(word.id);
-        }
-      });
     } catch (error) {
       console.error('Error loading words:', error);
       toast({
@@ -143,31 +96,31 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setIsLoading(true);
       const result = await apiClient.addWords(wordsToAdd);
       
-      const newWords = result.words.map(w => {
-        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
-        return {
-          id: w.id,
-          english_word: w.english_word,
-          russian_translation: w.russian_translation,
-          examples: w.examples,
-          status: w.status,
-          recall_count: w.recall_count,
-          category: w.category || 'uncategorized',
-          is_generating: isGenerating
-        };
-      });
+      const newWords = result.words.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized',
+        is_generating: false
+      }));
       
       setWords([...newWords, ...words]);
-      
       updateUser({ word_count: words.length + result.count });
       setNewWord('');
       setIsAddDialogOpen(false);
       
-      newWords.forEach(word => {
-        if (word.is_generating) {
-          generateWordDetailsInBackground(word.id);
-        }
-      });
+      if (result.corrections && result.corrections.length > 0) {
+        result.corrections.forEach(correction => {
+          toast({
+            title: 'Упс, кажется вы ошиблись в написании слова, мы его поправили!',
+            description: `${correction.original} → ${correction.corrected}`,
+            duration: 6000
+          });
+        });
+      }
       
       if (result.count > 0) {
         const description = result.message 
@@ -241,27 +194,18 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       const result = await response.json();
       
-      const newWords = result.words.map((w: any) => {
-        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
-        return {
-          id: w.id,
-          english_word: w.english_word,
-          russian_translation: w.russian_translation,
-          examples: w.examples,
-          status: w.status,
-          recall_count: w.recall_count,
-          category: w.category || 'uncategorized',
-          is_generating: isGenerating
-        };
-      });
+      const newWords = result.words.map((w: any) => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized',
+        is_generating: false
+      }));
       
       setWords([...newWords, ...words]);
-      
-      newWords.forEach(word => {
-        if (word.is_generating) {
-          generateWordDetailsInBackground(word.id);
-        }
-      });
       
       updateUser({ word_count: words.length + result.count });
       
@@ -307,27 +251,18 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       const result = await response.json();
       
-      const newWords = result.words.map((w: ApiWord) => {
-        const isGenerating = w.russian_translation === '...' || w.is_generating === true;
-        return {
-          id: w.id,
-          english_word: w.english_word,
-          russian_translation: w.russian_translation,
-          examples: w.examples,
-          status: w.status,
-          recall_count: w.recall_count,
-          category: w.category || 'uncategorized',
-          is_generating: isGenerating
-        };
-      });
+      const newWords = result.words.map((w: ApiWord) => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized',
+        is_generating: false
+      }));
       
       setWords([...newWords, ...words]);
-      
-      newWords.forEach(word => {
-        if (word.is_generating) {
-          generateWordDetailsInBackground(word.id);
-        }
-      });
       
       updateUser({ word_count: words.length + result.count });
       setAiPrompt('');

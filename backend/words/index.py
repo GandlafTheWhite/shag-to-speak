@@ -26,56 +26,42 @@ CATEGORIES = [
     'shapes_sizes', 'materials', 'tools_equipment'
 ]
 
-def categorize_word(word: str) -> str:
+def check_spelling_and_enrich_batch(words_list: List[str]) -> Dict[str, Dict[str, Any]]:
     api_key = os.environ.get('GENAPI_KEY', '')
     if not api_key:
-        return 'uncategorized'
-    
-    try:
-        response = requests.post(
-            'https://api.gen-api.ru/api/v1/networks/o1-mini',
-            headers={
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {api_key}'
-            },
-            json={
-                'is_sync': True,
-                'messages': [{
-                    'role': 'user',
-                    'content': f'Определи к какой категории относится английское слово "{word}". Выбери ОДНУ категорию из списка: {", ".join(CATEGORIES)}. Ответь ТОЛЬКО названием категории, без дополнительного текста.'
-                }],
-                'model': 'o1-mini-2024-09-12',
-                'stream': False
-            },
-            timeout=15
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            content = None
-            if 'response' in data and len(data['response']) > 0:
-                content = data['response'][0]['message']['content']
-            elif 'output' in data and 'choices' in data['output']:
-                content = data['output']['choices'][0]['message']['content']
-            
-            if content:
-                category = content.strip().lower().replace(' ', '_').replace('&', '').replace('–', '_')
-                if category in CATEGORIES:
-                    return category
-        
-        return 'uncategorized'
-    except Exception as e:
-        print(f'Error categorizing word "{word}": {str(e)}')
-        return 'uncategorized'
-
-def generate_translation_and_examples(word: str) -> Dict[str, Any]:
-    api_key = os.environ.get('GENAPI_KEY', '')
-    if not api_key:
-        return {
+        return {word: {
+            'corrected_word': word,
+            'was_corrected': False,
             'translation': '...',
-            'examples': ['Генерация примеров...'],
-            'category': 'uncategorized'
-        }
+            'examples': ['Ошибка генерации'],
+            'category': 'uncategorized',
+            'transcription': '',
+            'part_of_speech': 'noun',
+            'difficulty_level': 'intermediate',
+            'example_sentence': f'This is an example with {word}.'
+        } for word in words_list}
+    
+    words_text = '", "'.join(words_list)
+    prompt = f'''Проверь орфографию и обогати следующие английские слова: "{words_text}"
+
+Для КАЖДОГО слова верни JSON объект со следующими полями:
+1. corrected_word - исправленное написание слова (если ошибок нет, вернуть оригинальное слово)
+2. was_corrected - true/false (было ли исправлено)
+3. translation - краткий русский перевод (1-3 слова)
+4. examples - массив из 3 коротких примеров использования на английском
+5. category - одна категория из списка: {', '.join(CATEGORIES[:20])}
+6. transcription - IPA транскрипция (например /wɜːrd/)
+7. part_of_speech - часть речи (noun/verb/adjective/adverb/preposition/etc)
+8. difficulty_level - уровень сложности (beginner/intermediate/advanced/master)
+9. example_sentence - естественное предложение на английском с этим словом
+
+Верни ТОЛЬКО валидный JSON в формате:
+{{
+  "word1": {{...}},
+  "word2": {{...}}
+}}
+
+Без дополнительного текста, только JSON.'''
     
     try:
         response = requests.post(
@@ -86,20 +72,15 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
             },
             json={
                 'is_sync': True,
-                'messages': [{
-                    'role': 'user',
-                    'content': f'Переведи английское слово "{word}" на русский язык и дай 3 коротких примера использования этого слова на английском языке. Ответь ТОЛЬКО в формате JSON без дополнительного текста: {{"translation": "краткий русский перевод", "examples": ["Example 1 with {word}", "Example 2 with {word}", "Example 3 with {word}"]}}'
-                }],
+                'messages': [{'role': 'user', 'content': prompt}],
                 'model': 'o1-mini-2024-09-12',
                 'stream': False
             },
-            timeout=45
+            timeout=60
         )
         
         if response.status_code == 200:
             data = response.json()
-            print(f'GenAPI response for "{word}": {json.dumps(data)}')
-            
             content = None
             if 'response' in data and len(data['response']) > 0:
                 content = data['response'][0]['message']['content']
@@ -108,7 +89,6 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
             
             if content:
                 content_clean = content.strip()
-                
                 if content_clean.startswith('```json'):
                     content_clean = content_clean[7:]
                 if content_clean.startswith('```'):
@@ -117,35 +97,84 @@ def generate_translation_and_examples(word: str) -> Dict[str, Any]:
                     content_clean = content_clean[:-3]
                 content_clean = content_clean.strip()
                 
-                print(f'Cleaned content for "{word}": {content_clean}')
-                
                 result = json.loads(content_clean)
-                return {
-                    'translation': result.get('translation', 'перевод'),
-                    'examples': result.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
-                    'category': 'uncategorized'
-                }
-            else:
-                print(f'GenAPI response missing expected structure for "{word}"')
-                return {
-                    'translation': '...',
-                    'examples': ['Генерация примеров...'],
-                    'category': 'uncategorized'
-                }
-        else:
-            print(f'GenAPI returned status {response.status_code} for "{word}"')
-            return {
-                'translation': '...',
-                'examples': ['Генерация примеров...'],
-                'category': 'uncategorized'
-            }
-    except Exception as e:
-        print(f'Error generating translation for "{word}": {str(e)}')
-        return {
+                
+                enriched_data = {}
+                for word in words_list:
+                    word_data = result.get(word, result.get(word.lower(), {}))
+                    if not word_data:
+                        for key in result.keys():
+                            if key.lower() == word.lower():
+                                word_data = result[key]
+                                break
+                    
+                    if word_data:
+                        category = word_data.get('category', 'uncategorized').lower().replace(' ', '_').replace('&', '').replace('–', '_')
+                        if category not in CATEGORIES:
+                            category = 'uncategorized'
+                        
+                        valid_pos = ['noun', 'verb', 'adjective', 'adverb', 'preposition', 'pronoun', 'conjunction', 'interjection']
+                        pos = word_data.get('part_of_speech', 'noun')
+                        if pos not in valid_pos:
+                            pos = 'noun'
+                        
+                        valid_levels = ['beginner', 'intermediate', 'advanced', 'master']
+                        level = word_data.get('difficulty_level', 'intermediate')
+                        if level not in valid_levels:
+                            level = 'intermediate'
+                        
+                        enriched_data[word] = {
+                            'corrected_word': word_data.get('corrected_word', word).strip().lower(),
+                            'was_corrected': word_data.get('was_corrected', False),
+                            'translation': word_data.get('translation', '...'),
+                            'examples': word_data.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
+                            'category': category,
+                            'transcription': word_data.get('transcription', ''),
+                            'part_of_speech': pos,
+                            'difficulty_level': level,
+                            'example_sentence': word_data.get('example_sentence', f'This is an example with {word}.')
+                        }
+                    else:
+                        enriched_data[word] = {
+                            'corrected_word': word,
+                            'was_corrected': False,
+                            'translation': '...',
+                            'examples': ['Ошибка генерации'],
+                            'category': 'uncategorized',
+                            'transcription': '',
+                            'part_of_speech': 'noun',
+                            'difficulty_level': 'intermediate',
+                            'example_sentence': f'This is an example with {word}.'
+                        }
+                
+                return enriched_data
+        
+        return {word: {
+            'corrected_word': word,
+            'was_corrected': False,
             'translation': '...',
-            'examples': ['Генерация примеров...'],
-            'category': 'uncategorized'
-        }
+            'examples': ['Ошибка генерации'],
+            'category': 'uncategorized',
+            'transcription': '',
+            'part_of_speech': 'noun',
+            'difficulty_level': 'intermediate',
+            'example_sentence': f'This is an example with {word}.'
+        } for word in words_list}
+    except Exception as e:
+        print(f'Error in batch spell-check and enrichment: {str(e)}')
+        return {word: {
+            'corrected_word': word,
+            'was_corrected': False,
+            'translation': '...',
+            'examples': ['Ошибка генерации'],
+            'category': 'uncategorized',
+            'transcription': '',
+            'part_of_speech': 'noun',
+            'difficulty_level': 'intermediate',
+            'example_sentence': f'This is an example with {word}.'
+        } for word in words_list}
+
+
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -183,7 +212,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if method == 'GET':
             cursor.execute(
                 """SELECT id, english_word, russian_translation, examples, status, recall_count, 
-                          last_recall_date, created_at, category
+                          last_recall_date, created_at, category, transcription, part_of_speech,
+                          difficulty_level, example_sentence
                    FROM t_p7147437_shag_to_speak.words 
                    WHERE user_id = %s
                    ORDER BY created_at DESC""",
@@ -202,7 +232,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'recall_count': word['recall_count'] or 0,
                     'last_recall_date': word['last_recall_date'].isoformat() if word['last_recall_date'] else None,
                     'created_at': word['created_at'].isoformat() if word['created_at'] else None,
-                    'category': word.get('category', 'uncategorized')
+                    'category': word.get('category', 'uncategorized'),
+                    'transcription': word.get('transcription', ''),
+                    'part_of_speech': word.get('part_of_speech', 'noun'),
+                    'difficulty_level': word.get('difficulty_level', 'intermediate'),
+                    'example_sentence': word.get('example_sentence', '')
                 })
             
             return {
@@ -252,30 +286,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            words_to_check = [w.strip().lower() for w in words_input if w.strip()]
+            if not words_to_check:
+                return {
+                    'statusCode': 400,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': 'No valid words provided'}),
+                    'isBase64Encoded': False
+                }
+            
+            print(f'Checking and enriching {len(words_to_check)} words: {words_to_check}')
+            enriched_data = check_spelling_and_enrich_batch(words_to_check)
+            print(f'Enrichment complete: {json.dumps(enriched_data)}')
+            
             added_words = []
             duplicate_words = []
+            corrections = []
             
-            for word_text in words_input:
-                word_text = word_text.strip().lower()
-                if not word_text:
-                    continue
+            for original_word in words_to_check:
+                word_data = enriched_data.get(original_word, {})
+                corrected_word = word_data.get('corrected_word', original_word)
+                was_corrected = word_data.get('was_corrected', False)
+                
+                if was_corrected:
+                    corrections.append({
+                        'original': original_word,
+                        'corrected': corrected_word
+                    })
                 
                 cursor.execute(
                     "SELECT id FROM t_p7147437_shag_to_speak.words WHERE user_id = %s AND english_word = %s",
-                    (user_id, word_text)
+                    (user_id, corrected_word)
                 )
                 existing = cursor.fetchone()
                 
                 if existing:
-                    duplicate_words.append(word_text)
+                    duplicate_words.append(corrected_word)
                     continue
                 
                 cursor.execute(
                     """INSERT INTO t_p7147437_shag_to_speak.words 
-                       (user_id, english_word, russian_translation, examples, status, recall_count, category)
-                       VALUES (%s, %s, %s, %s, 'learning', 0, %s)
-                       RETURNING id, english_word, russian_translation, examples, status, recall_count, category""",
-                    (user_id, word_text, '...', ['Генерация примеров...'], 'uncategorized')
+                       (user_id, english_word, russian_translation, examples, status, recall_count, category,
+                        transcription, part_of_speech, difficulty_level, example_sentence)
+                       VALUES (%s, %s, %s, %s, 'learning', 0, %s, %s, %s, %s, %s)
+                       RETURNING id, english_word, russian_translation, examples, status, recall_count, category,
+                                 transcription, part_of_speech, difficulty_level, example_sentence""",
+                    (user_id, corrected_word, word_data.get('translation', '...'), 
+                     word_data.get('examples', ['Пример']), word_data.get('category', 'uncategorized'),
+                     word_data.get('transcription', ''), word_data.get('part_of_speech', 'noun'),
+                     word_data.get('difficulty_level', 'intermediate'), word_data.get('example_sentence', ''))
                 )
                 new_word = cursor.fetchone()
                 added_words.append({
@@ -286,7 +345,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': new_word['status'],
                     'recall_count': new_word['recall_count'],
                     'category': new_word.get('category', 'uncategorized'),
-                    'is_generating': True
+                    'transcription': new_word.get('transcription', ''),
+                    'part_of_speech': new_word.get('part_of_speech', 'noun'),
+                    'difficulty_level': new_word.get('difficulty_level', 'intermediate'),
+                    'example_sentence': new_word.get('example_sentence', '')
                 })
             
             if duplicate_words and not added_words:
@@ -304,6 +366,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'words': added_words,
                 'count': len(added_words)
             }
+            
+            if corrections:
+                response_data['corrections'] = corrections
             
             if duplicate_words:
                 response_data['duplicates'] = duplicate_words

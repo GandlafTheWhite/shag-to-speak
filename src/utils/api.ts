@@ -207,7 +207,13 @@ class ApiClient {
     return data.words;
   }
 
-  async addWords(words: string[]): Promise<{ words: Word[]; count: number; message?: string; duplicates?: string[] }> {
+  async addWords(words: string[]): Promise<{ 
+    words: Word[]; 
+    count: number; 
+    message?: string; 
+    duplicates?: string[];
+    corrections?: Array<{ original: string; corrected: string }>;
+  }> {
     const response = await fetch(API_URLS.words, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -222,21 +228,7 @@ class ApiClient {
     return await response.json();
   }
 
-  async generateWordDetails(wordId: number): Promise<Word> {
-    const response = await fetch('https://functions.poehali.dev/5b11fbea-99aa-47a8-8e89-a87ee104dbf7', {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ word_id: wordId }),
-    });
 
-    if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.error || 'Failed to generate word details');
-    }
-
-    const data = await response.json();
-    return data.word;
-  }
 
   async updateWordStatus(wordId: number, status: 'learning' | 'done'): Promise<void> {
     const response = await fetch(API_URLS.words, {
