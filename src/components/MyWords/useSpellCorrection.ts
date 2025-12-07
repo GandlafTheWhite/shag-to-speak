@@ -76,9 +76,14 @@ export const useSpellCorrection = (
     try {
       setIsLoading(true);
       
-      const finalWords = pendingWordsInput.map(word => 
-        correctionDecisions[word] || word
-      );
+      console.log('[SpellCorrection] pendingWordsInput:', pendingWordsInput);
+      console.log('[SpellCorrection] correctionDecisions:', correctionDecisions);
+      
+      const finalWords = pendingWordsInput.map(word => {
+        const selectedWord = correctionDecisions[word] || word;
+        console.log(`[SpellCorrection] Mapping: "${word}" -> "${selectedWord}"`);
+        return selectedWord;
+      });
       
       const updatedEnrichedData: any = {};
       
