@@ -84,21 +84,23 @@ export const useSpellCorrection = (
       
       for (const originalWord of pendingWordsInput) {
         const selectedWord = correctionDecisions[originalWord] || originalWord;
+        const selectedWordLower = selectedWord.toLowerCase();
         
         if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
-          console.log('[SpellCorrection] Fetching enrichment for corrected word:', correctionDecisions[originalWord]);
-          const correctedEnrichment = await fetchEnrichmentForWord(correctionDecisions[originalWord]);
+          console.log('[SpellCorrection] Fetching enrichment for corrected word:', selectedWord);
+          const correctedEnrichment = await fetchEnrichmentForWord(selectedWord);
           console.log('[SpellCorrection] Received enrichment:', correctedEnrichment);
-          console.log('[SpellCorrection] Using key:', correctedEnrichment.corrected_word);
-          updatedEnrichedData[correctedEnrichment.corrected_word] = {
+          console.log('[SpellCorrection] Using key (selectedWord lowercase):', selectedWordLower);
+          updatedEnrichedData[selectedWordLower] = {
             ...correctedEnrichment,
+            corrected_word: selectedWordLower,
             was_corrected: false
           };
         } else if (enrichedDataCache[originalWord]) {
           console.log('[SpellCorrection] Using cached enrichment for:', originalWord);
-          updatedEnrichedData[selectedWord] = {
+          updatedEnrichedData[selectedWordLower] = {
             ...enrichedDataCache[originalWord],
-            corrected_word: selectedWord,
+            corrected_word: selectedWordLower,
             was_corrected: false
           };
         }
