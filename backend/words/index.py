@@ -253,6 +253,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             words_input = body_data.get('words', [])
             check_only = body_data.get('check_only', False)
+            provided_enriched_data = body_data.get('enriched_data', None)
             
             if not words_input:
                 return {
@@ -284,9 +285,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            print(f'Checking and enriching {len(words_to_check)} words: {words_to_check}')
-            enriched_data = check_spelling_and_enrich_batch(words_to_check)
-            print(f'Enrichment complete: {json.dumps(enriched_data)}')
+            if provided_enriched_data:
+                print(f'Using provided enriched data for {len(words_to_check)} words')
+                enriched_data = provided_enriched_data
+            else:
+                print(f'Checking and enriching {len(words_to_check)} words: {words_to_check}')
+                enriched_data = check_spelling_and_enrich_batch(words_to_check)
+                print(f'Enrichment complete: {json.dumps(enriched_data)}')
             
             corrections = []
             for original_word in words_to_check:

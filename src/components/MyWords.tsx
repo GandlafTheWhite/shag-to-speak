@@ -200,7 +200,19 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         correctionDecisions[word] || word
       );
       
-      const result = await apiClient.addWords(finalWords);
+      const updatedEnrichedData: any = {};
+      finalWords.forEach(finalWord => {
+        const originalWord = pendingWordsInput.find(w => correctionDecisions[w] === finalWord || w === finalWord);
+        if (originalWord && enrichedDataCache[originalWord]) {
+          updatedEnrichedData[finalWord] = {
+            ...enrichedDataCache[originalWord],
+            corrected_word: finalWord,
+            was_corrected: false
+          };
+        }
+      });
+      
+      const result = await apiClient.addWords(finalWords, updatedEnrichedData);
       
       const newWords = result.words.map(w => ({
         id: w.id,

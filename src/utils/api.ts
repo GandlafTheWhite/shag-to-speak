@@ -207,17 +207,22 @@ class ApiClient {
     return data.words;
   }
 
-  async addWords(words: string[]): Promise<{ 
+  async addWords(words: string[], enrichedData?: any): Promise<{ 
     words: Word[]; 
     count: number; 
     message?: string; 
     duplicates?: string[];
     corrections?: Array<{ original: string; corrected: string }>;
   }> {
+    const body: any = { words };
+    if (enrichedData) {
+      body.enriched_data = enrichedData;
+    }
+
     const response = await fetch(API_URLS.words, {
       method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify({ words }),
+      body: JSON.stringify(body),
     });
 
     if (!response.ok) {
