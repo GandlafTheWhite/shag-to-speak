@@ -31,15 +31,15 @@ export const useSpellCorrection = (
   const [enrichedDataCache, setEnrichedDataCache] = useState<any>(null);
   const [pendingWordsInput, setPendingWordsInput] = useState<string[]>([]);
 
-  const handleWordSelect = (selectedWord: string) => {
-    const current = pendingCorrections[currentCorrectionIndex];
-    console.log('[handleWordSelect] User selected:', selectedWord);
-    console.log('[handleWordSelect] Original word:', current.original);
-    console.log('[handleWordSelect] Setting decision:', current.original, '->', selectedWord);
+  const handleWordSelect = (selectedWord: string, originalWord: string) => {
+    console.log('[handleWordSelect] User selected:', selectedWord, 'for original:', originalWord);
+    console.log('[handleWordSelect] Current corrections state:', pendingCorrections);
+    console.log('[handleWordSelect] Current index:', currentCorrectionIndex);
     
     setIsProcessingCorrection(true);
+    
     setCorrectionDecisions(prev => {
-      const updated = { ...prev, [current.original]: selectedWord };
+      const updated = { ...prev, [originalWord]: selectedWord };
       console.log('[handleWordSelect] Updated correctionDecisions:', updated);
       return updated;
     });
@@ -47,9 +47,10 @@ export const useSpellCorrection = (
     setTimeout(() => {
       setIsProcessingCorrection(false);
       if (currentCorrectionIndex < pendingCorrections.length - 1) {
+        console.log('[handleWordSelect] Moving to next correction');
         setCurrentCorrectionIndex(currentCorrectionIndex + 1);
       } else {
-        console.log('[handleWordSelect] Last word, calling finalizeCorrectedWords...');
+        console.log('[handleWordSelect] Last word processed, finalizing...');
         finalizeCorrectedWords();
       }
     }, 300);

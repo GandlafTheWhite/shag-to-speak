@@ -18,7 +18,7 @@ interface Correction {
 interface CorrectionSuggestionsDialogProps {
   corrections: Correction[];
   currentIndex: number;
-  onWordSelect: (selectedWord: string) => void;
+  onWordSelect: (selectedWord: string, originalWord: string) => void;
   onSkipWord: () => void;
   isOpen: boolean;
   isProcessing: boolean;
@@ -42,7 +42,7 @@ const CorrectionSuggestionsDialog = ({
   const handleWordClick = (word: string) => {
     setSelectedWordState(word);
     setTimeout(() => {
-      onWordSelect(word);
+      onWordSelect(word, current.original);
       setSelectedWordState(null);
     }, 150);
   };
