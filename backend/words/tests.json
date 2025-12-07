@@ -20,6 +20,24 @@
       "bodyMatcher": "partial"
     },
     {
+      "name": "Check spelling only (without adding)",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "words": ["hello"],
+        "check_only": true
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "corrections": "array",
+        "enriched_data": "object"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Add new words with spell-check and enrichment",
       "method": "POST",
       "path": "/",
@@ -27,7 +45,8 @@
         "X-User-Id": "1"
       },
       "body": {
-        "words": ["hello"]
+        "words": ["world"],
+        "check_only": false
       },
       "expectedStatus": 200,
       "expectedBody": {

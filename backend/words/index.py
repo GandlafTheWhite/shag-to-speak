@@ -252,6 +252,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         elif method == 'POST':
             body_data = json.loads(event.get('body', '{}'))
             words_input = body_data.get('words', [])
+            check_only = body_data.get('check_only', False)
             
             if not words_input:
                 return {
@@ -274,21 +275,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            cursor.execute(
-                "SELECT COUNT(*) as count FROM t_p7147437_shag_to_speak.words WHERE user_id = %s",
-                (user_id,)
-            )
-            current_count = cursor.fetchone()['count']
-            
-            word_limit = 50 if user['status'] == 'free' else 999
-            if current_count + len(words_input) > word_limit:
-                return {
-                    'statusCode': 403,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': f'Word limit exceeded. Max: {word_limit}'}),
-                    'isBase64Encoded': False
-                }
-            
             words_to_check = [w.strip().lower() for w in words_input if w.strip()]
             if not words_to_check:
                 return {
@@ -302,10 +288,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             enriched_data = check_spelling_and_enrich_batch(words_to_check)
             print(f'Enrichment complete: {json.dumps(enriched_data)}')
             
-            added_words = []
-            duplicate_words = []
             corrections = []
-            
             for original_word in words_to_check:
                 word_data = enriched_data.get(original_word, {})
                 corrected_word = word_data.get('corrected_word', original_word)
@@ -314,8 +297,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 if was_corrected:
                     corrections.append({
                         'original': original_word,
-                        'corrected': corrected_word
+                        'corrected': corrected_word,
+                        'enriched_data': word_data
                     })
+            
+            if check_only:
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({
+                        'corrections': corrections,
+                        'enriched_data': enriched_data
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM t_p7147437_shag_to_speak.words WHERE user_id = %s",
+                (user_id,)
+            )
+            current_count = cursor.fetchone()['count']
+            
+            word_limit = 50 if user['status'] == 'free' else 999
+            if current_count + len(words_to_check) > word_limit:
+                return {
+                    'statusCode': 403,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'error': f'Word limit exceeded. Max: {word_limit}'}),
+                    'isBase64Encoded': False
+                }
+            
+            added_words = []
+            duplicate_words = []
+            
+            for original_word in words_to_check:
+                word_data = enriched_data.get(original_word, {})
+                corrected_word = word_data.get('corrected_word', original_word)
                 
                 cursor.execute(
                     "SELECT id FROM t_p7147437_shag_to_speak.words WHERE user_id = %s AND english_word = %s",
@@ -369,9 +386,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'words': added_words,
                 'count': len(added_words)
             }
-            
-            if corrections:
-                response_data['corrections'] = corrections
             
             if duplicate_words:
                 response_data['duplicates'] = duplicate_words

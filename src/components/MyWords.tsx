@@ -8,6 +8,7 @@ import { apiClient, type Word as ApiWord } from '@/utils/api';
 import { CATEGORIES } from '@/data/categories';
 import WordsListView from './words/WordsListView';
 import WordsCategoriesView from './words/WordsCategoriesView';
+import CorrectionConfirmDialog from './words/CorrectionConfirmDialog';
 import { type Word } from './words/WordCard';
 
 interface MyWordsProps {
@@ -29,6 +30,11 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCategorizing, setIsCategorizing] = useState(false);
+  const [pendingCorrections, setPendingCorrections] = useState<Array<{ original: string; corrected: string }>>([]);
+  const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0);
+  const [correctionDecisions, setCorrectionDecisions] = useState<Record<string, string>>({});
+  const [enrichedDataCache, setEnrichedDataCache] = useState<any>(null);
+  const [pendingWordsInput, setPendingWordsInput] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -94,6 +100,32 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
     try {
       setIsLoading(true);
+      
+      const checkResponse = await fetch('https://functions.poehali.dev/d87144a4-ac34-4dce-bdf8-449ebd85b759', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id.toString()
+        },
+        body: JSON.stringify({ words: wordsToAdd, check_only: true })
+      });
+
+      if (!checkResponse.ok) {
+        throw new Error('Не удалось проверить слова');
+      }
+
+      const checkData = await checkResponse.json();
+      
+      if (checkData.corrections && checkData.corrections.length > 0) {
+        setPendingCorrections(checkData.corrections);
+        setCurrentCorrectionIndex(0);
+        setCorrectionDecisions({});
+        setEnrichedDataCache(checkData.enriched_data);
+        setPendingWordsInput(wordsToAdd);
+        setIsLoading(false);
+        return;
+      }
+      
       const result = await apiClient.addWords(wordsToAdd);
       
       const newWords = result.words.map(w => ({
@@ -112,16 +144,6 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setNewWord('');
       setIsAddDialogOpen(false);
       
-      if (result.corrections && result.corrections.length > 0) {
-        result.corrections.forEach(correction => {
-          toast({
-            title: 'Упс, кажется вы ошиблись в написании слова, мы его поправили!',
-            description: `${correction.original} → ${correction.corrected}`,
-            duration: 6000
-          });
-        });
-      }
-      
       if (result.count > 0) {
         const description = result.message 
           ? `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}. ${result.message}`
@@ -135,6 +157,77 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         toast({
           title: 'Информация',
           description: result.message
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось добавить слова',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCorrectionAccept = () => {
+    const current = pendingCorrections[currentCorrectionIndex];
+    setCorrectionDecisions(prev => ({ ...prev, [current.original]: current.corrected }));
+    
+    if (currentCorrectionIndex < pendingCorrections.length - 1) {
+      setCurrentCorrectionIndex(currentCorrectionIndex + 1);
+    } else {
+      finalizeCorrectedWords();
+    }
+  };
+
+  const handleCorrectionReject = () => {
+    const current = pendingCorrections[currentCorrectionIndex];
+    setCorrectionDecisions(prev => ({ ...prev, [current.original]: current.original }));
+    
+    if (currentCorrectionIndex < pendingCorrections.length - 1) {
+      setCurrentCorrectionIndex(currentCorrectionIndex + 1);
+    } else {
+      finalizeCorrectedWords();
+    }
+  };
+
+  const finalizeCorrectedWords = async () => {
+    try {
+      setIsLoading(true);
+      
+      const finalWords = pendingWordsInput.map(word => 
+        correctionDecisions[word] || word
+      );
+      
+      const result = await apiClient.addWords(finalWords);
+      
+      const newWords = result.words.map(w => ({
+        id: w.id,
+        english_word: w.english_word,
+        russian_translation: w.russian_translation,
+        examples: w.examples,
+        status: w.status,
+        recall_count: w.recall_count,
+        category: w.category || 'uncategorized',
+        is_generating: false
+      }));
+      
+      setWords([...newWords, ...words]);
+      updateUser({ word_count: words.length + result.count });
+      setNewWord('');
+      setIsAddDialogOpen(false);
+      
+      setPendingCorrections([]);
+      setCurrentCorrectionIndex(0);
+      setCorrectionDecisions({});
+      setEnrichedDataCache(null);
+      setPendingWordsInput([]);
+      
+      if (result.count > 0) {
+        toast({
+          title: 'Слова добавлены!',
+          description: `Добавлено ${result.count} ${result.count === 1 ? 'слово' : 'слов'}`
         });
       }
     } catch (error) {
@@ -376,6 +469,14 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <CorrectionConfirmDialog
+        corrections={pendingCorrections}
+        currentIndex={currentCorrectionIndex}
+        onAccept={handleCorrectionAccept}
+        onReject={handleCorrectionReject}
+        isOpen={pendingCorrections.length > 0 && currentCorrectionIndex < pendingCorrections.length}
+      />
     </div>
   );
 };
