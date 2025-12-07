@@ -48,18 +48,38 @@ def check_spelling_and_enrich_batch(words_list: List[str]) -> Dict[str, Dict[str
 For EACH word return JSON with these fields:
 1. corrected_word - corrected spelling (if no error, return original word in lowercase)
 2. was_corrected - true if spelling was fixed, false otherwise
-3. translation - brief Russian translation (1-3 words)
-4. examples - array of 3 short English sentences using this word
-5. category - one from: {categories_sample}, or uncategorized
-6. transcription - IPA format like /wɜːrd/
-7. part_of_speech - noun, verb, adjective, adverb, preposition, etc
-8. difficulty_level - beginner, intermediate, advanced, or master
-9. example_sentence - natural English sentence with this word
+3. suggestions - if was_corrected is true, provide array of 3-5 possible words user might have meant, each with:
+   - word: correct English word
+   - translation: brief Russian translation (1-3 words)
+   - confidence: "high", "medium", or "low" based on similarity
+   If was_corrected is false, return empty array
+4. translation - brief Russian translation (1-3 words)
+5. examples - array of 3 short English sentences using this word
+6. category - one from: {categories_sample}, or uncategorized
+7. transcription - IPA format like /wɜːrd/
+8. part_of_speech - noun, verb, adjective, adverb, preposition, etc
+9. difficulty_level - beginner, intermediate, advanced, or master
+10. example_sentence - natural English sentence with this word
+
+For suggestions, consider:
+- Similar spelling (1-2 character difference)
+- Common typos and phonetic similarity
+- Context-appropriate words
 
 Return ONLY valid JSON (no extra text):
 {{
-  "original_word": {{...}},
-  "another_word": {{...}}
+  "original_word": {{
+    "corrected_word": "...",
+    "was_corrected": true/false,
+    "suggestions": [{{"word": "speak", "translation": "говорить", "confidence": "high"}}, ...],
+    "translation": "...",
+    "examples": [...],
+    "category": "...",
+    "transcription": "...",
+    "part_of_speech": "...",
+    "difficulty_level": "...",
+    "example_sentence": "..."
+  }}
 }}'''
     
     try:
@@ -125,9 +145,14 @@ Return ONLY valid JSON (no extra text):
                         if level not in valid_levels:
                             level = 'intermediate'
                         
+                        suggestions = word_data.get('suggestions', [])
+                        if not isinstance(suggestions, list):
+                            suggestions = []
+                        
                         enriched_data[word] = {
                             'corrected_word': word_data.get('corrected_word', word).strip().lower(),
                             'was_corrected': word_data.get('was_corrected', False),
+                            'suggestions': suggestions,
                             'translation': word_data.get('translation', '...'),
                             'examples': word_data.get('examples', ['Пример 1', 'Пример 2', 'Пример 3']),
                             'category': category,
@@ -140,6 +165,7 @@ Return ONLY valid JSON (no extra text):
                         enriched_data[word] = {
                             'corrected_word': word,
                             'was_corrected': False,
+                            'suggestions': [],
                             'translation': '...',
                             'examples': ['Ошибка генерации'],
                             'category': 'uncategorized',
@@ -155,6 +181,7 @@ Return ONLY valid JSON (no extra text):
         return {word: {
             'corrected_word': word,
             'was_corrected': False,
+            'suggestions': [],
             'translation': '...',
             'examples': ['Ошибка генерации'],
             'category': 'uncategorized',
@@ -168,6 +195,7 @@ Return ONLY valid JSON (no extra text):
         return {word: {
             'corrected_word': word,
             'was_corrected': False,
+            'suggestions': [],
             'translation': '...',
             'examples': ['Ошибка генерации'],
             'category': 'uncategorized',
@@ -296,14 +324,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             corrections = []
             for original_word in words_to_check:
                 word_data = enriched_data.get(original_word, {})
-                corrected_word = word_data.get('corrected_word', original_word)
                 was_corrected = word_data.get('was_corrected', False)
+                suggestions = word_data.get('suggestions', [])
                 
-                if was_corrected:
+                if was_corrected and suggestions:
                     corrections.append({
                         'original': original_word,
-                        'corrected': corrected_word,
-                        'enriched_data': word_data
+                        'suggestions': suggestions
                     })
             
             if check_only:

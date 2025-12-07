@@ -8,7 +8,7 @@ import { apiClient, type Word as ApiWord } from '@/utils/api';
 import { CATEGORIES } from '@/data/categories';
 import WordsListView from './words/WordsListView';
 import WordsCategoriesView from './words/WordsCategoriesView';
-import CorrectionConfirmDialog from './words/CorrectionConfirmDialog';
+import CorrectionSuggestionsDialog from './words/CorrectionSuggestionsDialog';
 import { type Word } from './words/WordCard';
 
 interface MyWordsProps {
@@ -30,9 +30,10 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
   const [aiPrompt, setAiPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCategorizing, setIsCategorizing] = useState(false);
-  const [pendingCorrections, setPendingCorrections] = useState<Array<{ original: string; corrected: string }>>([]);
+  const [pendingCorrections, setPendingCorrections] = useState<Array<{ original: string; suggestions: Array<{ word: string; translation: string; confidence: string }> }>>([]);
   const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0);
   const [correctionDecisions, setCorrectionDecisions] = useState<Record<string, string>>({});
+  const [isProcessingCorrection, setIsProcessingCorrection] = useState(false);
   const [enrichedDataCache, setEnrichedDataCache] = useState<any>(null);
   const [pendingWordsInput, setPendingWordsInput] = useState<string[]>([]);
   const { toast } = useToast();
@@ -117,13 +118,19 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       const checkData = await checkResponse.json();
       
       if (checkData.corrections && checkData.corrections.length > 0) {
-        setPendingCorrections(checkData.corrections);
-        setCurrentCorrectionIndex(0);
-        setCorrectionDecisions({});
-        setEnrichedDataCache(checkData.enriched_data);
-        setPendingWordsInput(wordsToAdd);
-        setIsLoading(false);
-        return;
+        const correctionsWithSuggestions = checkData.corrections.filter(
+          (c: any) => c.suggestions && c.suggestions.length > 0
+        );
+        
+        if (correctionsWithSuggestions.length > 0) {
+          setPendingCorrections(correctionsWithSuggestions);
+          setCurrentCorrectionIndex(0);
+          setCorrectionDecisions({});
+          setEnrichedDataCache(checkData.enriched_data);
+          setPendingWordsInput(wordsToAdd);
+          setIsLoading(false);
+          return;
+        }
       }
       
       const result = await apiClient.addWords(wordsToAdd);
@@ -170,25 +177,44 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     }
   };
 
-  const handleCorrectionAccept = () => {
+  const handleWordSelect = (selectedWord: string) => {
     const current = pendingCorrections[currentCorrectionIndex];
-    setCorrectionDecisions(prev => ({ ...prev, [current.original]: current.corrected }));
+    setIsProcessingCorrection(true);
+    setCorrectionDecisions(prev => ({ ...prev, [current.original]: selectedWord }));
     
-    if (currentCorrectionIndex < pendingCorrections.length - 1) {
-      setCurrentCorrectionIndex(currentCorrectionIndex + 1);
-    } else {
-      finalizeCorrectedWords();
-    }
+    setTimeout(() => {
+      setIsProcessingCorrection(false);
+      if (currentCorrectionIndex < pendingCorrections.length - 1) {
+        setCurrentCorrectionIndex(currentCorrectionIndex + 1);
+      } else {
+        finalizeCorrectedWords();
+      }
+    }, 300);
   };
 
-  const handleCorrectionReject = () => {
+  const handleSkipWord = () => {
     const current = pendingCorrections[currentCorrectionIndex];
-    setCorrectionDecisions(prev => ({ ...prev, [current.original]: current.original }));
+    
+    const updatedWordsInput = pendingWordsInput.filter(w => w !== current.original);
+    setPendingWordsInput(updatedWordsInput);
     
     if (currentCorrectionIndex < pendingCorrections.length - 1) {
       setCurrentCorrectionIndex(currentCorrectionIndex + 1);
     } else {
-      finalizeCorrectedWords();
+      if (updatedWordsInput.length > 0) {
+        finalizeCorrectedWords();
+      } else {
+        setPendingCorrections([]);
+        setCurrentCorrectionIndex(0);
+        setCorrectionDecisions({});
+        setEnrichedDataCache(null);
+        setPendingWordsInput([]);
+        setIsLoading(false);
+        toast({
+          title: 'Отменено',
+          description: 'Добавление слов отменено'
+        });
+      }
     }
   };
 
@@ -201,16 +227,27 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       );
       
       const updatedEnrichedData: any = {};
-      finalWords.forEach(finalWord => {
-        const originalWord = pendingWordsInput.find(w => correctionDecisions[w] === finalWord || w === finalWord);
-        if (originalWord && enrichedDataCache[originalWord]) {
-          updatedEnrichedData[finalWord] = {
-            ...enrichedDataCache[originalWord],
-            corrected_word: finalWord,
-            was_corrected: false
-          };
+      
+      for (const originalWord of pendingWordsInput) {
+        const selectedWord = correctionDecisions[originalWord] || originalWord;
+        
+        if (enrichedDataCache[originalWord]) {
+          if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
+            const correctedEnrichment = await fetchEnrichmentForWord(correctionDecisions[originalWord]);
+            updatedEnrichedData[selectedWord] = {
+              ...correctedEnrichment,
+              corrected_word: selectedWord,
+              was_corrected: false
+            };
+          } else {
+            updatedEnrichedData[selectedWord] = {
+              ...enrichedDataCache[originalWord],
+              corrected_word: selectedWord,
+              was_corrected: false
+            };
+          }
         }
-      });
+      }
       
       const result = await apiClient.addWords(finalWords, updatedEnrichedData);
       
@@ -235,6 +272,7 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       setCorrectionDecisions({});
       setEnrichedDataCache(null);
       setPendingWordsInput([]);
+      setIsProcessingCorrection(false);
       
       if (result.count > 0) {
         toast({
@@ -250,7 +288,52 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       });
     } finally {
       setIsLoading(false);
+      setIsProcessingCorrection(false);
     }
+  };
+
+  const fetchEnrichmentForWord = async (word: string): Promise<any> => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/d87144a4-ac34-4dce-bdf8-449ebd85b759', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': user.id.toString()
+        },
+        body: JSON.stringify({ words: [word], check_only: true })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.enriched_data[word] || {
+          corrected_word: word,
+          was_corrected: false,
+          suggestions: [],
+          translation: '...',
+          examples: ['Example'],
+          category: 'uncategorized',
+          transcription: '',
+          part_of_speech: 'noun',
+          difficulty_level: 'intermediate',
+          example_sentence: `This is an example with ${word}.`
+        };
+      }
+    } catch (error) {
+      console.error('Failed to fetch enrichment:', error);
+    }
+    
+    return {
+      corrected_word: word,
+      was_corrected: false,
+      suggestions: [],
+      translation: '...',
+      examples: ['Example'],
+      category: 'uncategorized',
+      transcription: '',
+      part_of_speech: 'noun',
+      difficulty_level: 'intermediate',
+      example_sentence: `This is an example with ${word}.`
+    };
   };
 
   const handleStatusChange = async (wordId: number, newStatus: 'learning' | 'done') => {
@@ -482,12 +565,13 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         </Tabs>
       </main>
 
-      <CorrectionConfirmDialog
+      <CorrectionSuggestionsDialog
         corrections={pendingCorrections}
         currentIndex={currentCorrectionIndex}
-        onAccept={handleCorrectionAccept}
-        onReject={handleCorrectionReject}
+        onWordSelect={handleWordSelect}
+        onSkipWord={handleSkipWord}
         isOpen={pendingCorrections.length > 0 && currentCorrectionIndex < pendingCorrections.length}
+        isProcessing={isProcessingCorrection}
       />
     </div>
   );
