@@ -33,14 +33,23 @@ export const useSpellCorrection = (
 
   const handleWordSelect = (selectedWord: string) => {
     const current = pendingCorrections[currentCorrectionIndex];
+    console.log('[handleWordSelect] User selected:', selectedWord);
+    console.log('[handleWordSelect] Original word:', current.original);
+    console.log('[handleWordSelect] Setting decision:', current.original, '->', selectedWord);
+    
     setIsProcessingCorrection(true);
-    setCorrectionDecisions(prev => ({ ...prev, [current.original]: selectedWord }));
+    setCorrectionDecisions(prev => {
+      const updated = { ...prev, [current.original]: selectedWord };
+      console.log('[handleWordSelect] Updated correctionDecisions:', updated);
+      return updated;
+    });
     
     setTimeout(() => {
       setIsProcessingCorrection(false);
       if (currentCorrectionIndex < pendingCorrections.length - 1) {
         setCurrentCorrectionIndex(currentCorrectionIndex + 1);
       } else {
+        console.log('[handleWordSelect] Last word, calling finalizeCorrectedWords...');
         finalizeCorrectedWords();
       }
     }, 300);
