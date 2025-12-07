@@ -8,8 +8,14 @@ import json
 import os
 from typing import Dict, Any
 from datetime import datetime, timedelta
+from decimal import Decimal
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+def decimal_to_float(obj):
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -191,7 +197,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'weekly': activity_data
                 },
                 'top_words': top_words_data
-            }),
+            }, default=decimal_to_float),
             'isBase64Encoded': False
         }
     
