@@ -23,6 +23,7 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
   const [showResult, setShowResult] = useState(false);
   const [results, setResults] = useState<any>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -65,6 +66,7 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
     const timeSpent = Math.floor((Date.now() - startTime) / 1000);
     
     try {
+      setIsSubmitting(true);
       const answersData = exercises.map((ex, idx) => ({
         word_id: ex.word_id,
         answer: userAnswers[idx],
@@ -81,6 +83,8 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
         description: error instanceof Error ? error.message : 'Не удалось отправить ответы',
         variant: 'destructive',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -89,6 +93,30 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
       <div className="flex flex-col items-center justify-center min-h-[400px]">
         <Icon name="Loader2" size={48} className="animate-spin text-primary mb-4" />
         <p className="text-muted-foreground">Загрузка упражнений...</p>
+      </div>
+    );
+  }
+
+  if (isSubmitting) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <div className="text-center space-y-6 max-w-md px-6">
+          <div className="relative">
+            <div className="w-24 h-24 mx-auto">
+              <Icon name="Loader2" size={96} className="animate-spin text-primary" />
+            </div>
+            <div className="absolute inset-0 w-24 h-24 mx-auto rounded-full border-4 border-primary/20 animate-pulse" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold">
+              Проверяем ответы
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground">
+              Подсчитываем баллы и обновляем статистику...
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -319,8 +347,13 @@ const ExerciseSession = ({ exercises, difficulty, onComplete, onBack, isLoading 
               <Icon name="ChevronLeft" size={20} />
               <span className="hidden sm:inline ml-2">Назад</span>
             </Button>
-            <Button onClick={handleNext} size="lg" className="flex-[2]">
-              {currentIndex === exercises.length - 1 ? (
+            <Button onClick={handleNext} size="lg" className="flex-[2]" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Icon name="Loader2" size={20} className="animate-spin mr-2" />
+                  Сохраняем...
+                </>
+              ) : currentIndex === exercises.length - 1 ? (
                 <>
                   Завершить
                   <Icon name="Check" size={20} className="ml-2" />
