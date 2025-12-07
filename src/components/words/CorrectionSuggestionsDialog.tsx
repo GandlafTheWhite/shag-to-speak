@@ -22,6 +22,7 @@ interface CorrectionSuggestionsDialogProps {
   onSkipWord: () => void;
   isOpen: boolean;
   isProcessing: boolean;
+  isFinalizing?: boolean;
 }
 
 const CorrectionSuggestionsDialog = ({ 
@@ -30,7 +31,8 @@ const CorrectionSuggestionsDialog = ({
   onWordSelect, 
   onSkipWord,
   isOpen,
-  isProcessing
+  isProcessing,
+  isFinalizing = false
 }: CorrectionSuggestionsDialogProps) => {
   const [selectedWordState, setSelectedWordState] = useState<string | null>(null);
 
@@ -72,6 +74,14 @@ const CorrectionSuggestionsDialog = ({
   return (
     <Dialog open={isOpen}>
       <DialogContent className="sm:max-w-lg">
+        {isFinalizing && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+            <div className="flex flex-col items-center gap-3">
+              <Icon name="Loader2" size={40} className="animate-spin text-primary" />
+              <p className="text-sm font-medium">Добавляем слова в словарь...</p>
+            </div>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Icon name="AlertCircle" size={24} className="text-orange-500" />

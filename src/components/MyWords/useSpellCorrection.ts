@@ -28,6 +28,7 @@ export const useSpellCorrection = (
   const [currentCorrectionIndex, setCurrentCorrectionIndex] = useState(0);
   const [correctionDecisions, setCorrectionDecisions] = useState<Record<string, string>>({});
   const [isProcessingCorrection, setIsProcessingCorrection] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
   const [enrichedDataCache, setEnrichedDataCache] = useState<any>(null);
   const [pendingWordsInput, setPendingWordsInput] = useState<string[]>([]);
 
@@ -47,6 +48,7 @@ export const useSpellCorrection = (
         setCurrentCorrectionIndex(currentCorrectionIndex + 1);
       } else {
         console.log('[handleWordSelect] Last word processed, finalizing with decisions:', updatedDecisions);
+        setIsFinalizing(true);
         finalizeCorrectedWords(updatedDecisions);
       }
     }, 300);
@@ -81,6 +83,7 @@ export const useSpellCorrection = (
   const finalizeCorrectedWords = async (decisionsToUse?: Record<string, string>) => {
     try {
       setIsLoading(true);
+      setIsFinalizing(true);
       
       const decisions = decisionsToUse || correctionDecisions;
       console.log('[SpellCorrection] DEBUG - pendingWordsInput:', pendingWordsInput);
@@ -149,6 +152,7 @@ export const useSpellCorrection = (
       setEnrichedDataCache(null);
       setPendingWordsInput([]);
       setIsProcessingCorrection(false);
+      setIsFinalizing(false);
       
       if (result.count > 0) {
         toast({
@@ -165,6 +169,7 @@ export const useSpellCorrection = (
     } finally {
       setIsLoading(false);
       setIsProcessingCorrection(false);
+      setIsFinalizing(false);
     }
   };
 
@@ -227,6 +232,7 @@ export const useSpellCorrection = (
     correctionDecisions,
     setCorrectionDecisions,
     isProcessingCorrection,
+    isFinalizing,
     enrichedDataCache,
     setEnrichedDataCache,
     pendingWordsInput,

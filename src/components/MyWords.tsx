@@ -129,6 +129,7 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         onSkipWord={spellCorrection.handleSkipWord}
         isOpen={spellCorrection.pendingCorrections.length > 0 && spellCorrection.currentCorrectionIndex < spellCorrection.pendingCorrections.length}
         isProcessing={spellCorrection.isProcessingCorrection}
+        isFinalizing={spellCorrection.isFinalizing}
       />
     </div>
   );
