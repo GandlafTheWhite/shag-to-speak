@@ -10,7 +10,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Business: Get exercise categories from user's actual word dictionary
     Args: event with httpMethod, headers (X-User-Id)
           context with request_id
-    Returns: HTTP response with up to 4 random categories from user's words
+    Returns: HTTP response with all categories sorted by word count (descending)
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -82,16 +82,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             for cat in all_categories
         ]
         
-        if len(categories_list) <= 4:
-            selected_categories = categories_list
-        else:
-            selected_categories = random.sample(categories_list, 4)
-        
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
             'body': json.dumps({
-                'categories': selected_categories,
+                'categories': categories_list,
                 'total_categories': len(categories_list)
             }),
             'isBase64Encoded': False
