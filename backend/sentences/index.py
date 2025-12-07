@@ -18,8 +18,16 @@ def translate_phrase(phrase_text: str) -> str:
     if not api_key:
         return '...'
     
-    prompt = f'''Translate this English phrase to Russian (keep it natural and concise, 1-2 sentences max):
-"{phrase_text}"
+    prompt = f'''You are translating English phrases and idioms to Russian for language learners.
+
+IMPORTANT: If the phrase is an idiom or expression, provide its MEANING in Russian, NOT literal word-by-word translation.
+
+Examples:
+- "break the ice" → "разрядить обстановку, растопить лёд в общении"
+- "piece of cake" → "проще простого, пустяковое дело"
+- "it costs an arm and a leg" → "стоит целое состояние, безумно дорого"
+
+Now translate this phrase: "{phrase_text}"
 
 Return ONLY valid JSON:
 {{
