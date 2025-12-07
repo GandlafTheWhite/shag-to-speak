@@ -81,12 +81,20 @@ const MyProgress = ({ user, onNavigate }: MyProgressProps) => {
   const pieData = [
     { name: 'В изучении', value: stats.words.learning, color: '#3b82f6' },
     { name: 'Выучено', value: stats.words.done, color: '#10b981' }
-  ];
+  ].filter(item => item.value > 0);
 
   const weeklyData = stats.activity.weekly.map(day => ({
     date: new Date(day.date).toLocaleDateString('ru-RU', { weekday: 'short' }),
     count: day.count
   }));
+  
+  console.log('[MyProgress] Stats loaded:', {
+    words: stats.words,
+    exercises: stats.exercises,
+    pieData,
+    weeklyData,
+    topWords: stats.top_words.length
+  });
 
   const exerciseTypeLabels: Record<string, string> = {
     'translation': 'Перевод',
@@ -217,7 +225,7 @@ const MyProgress = ({ user, onNavigate }: MyProgressProps) => {
               <CardTitle className="font-display text-base sm:text-lg">Распределение слов</CardTitle>
             </CardHeader>
             <CardContent>
-              {stats.words.total > 0 ? (
+              {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
