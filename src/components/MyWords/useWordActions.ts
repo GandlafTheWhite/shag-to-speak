@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { apiClient, type Word as ApiWord } from '@/utils/api';
 import { type Word } from '../words/WordCard';
 import type { User } from '@/pages/Index';
+import type { Sentence } from '@/types/sentence';
 
 export const useWordActions = (
   user: User,
@@ -17,20 +19,40 @@ export const useWordActions = (
   setIsLoading: (loading: boolean) => void,
   setIsCategorizing: (categorizing: boolean) => void,
   loadWords: () => Promise<void>,
-  viewMode: 'list' | 'categories',
-  setViewMode: (mode: 'list' | 'categories') => void,
+  viewMode: 'list' | 'categories' | 'phrases',
+  setViewMode: (mode: 'list' | 'categories' | 'phrases') => void,
   setSelectedCategory: (category: string) => void,
   toast: any,
   setPendingCorrections: (corrections: any[]) => void,
   setCurrentCorrectionIndex: (index: number) => void,
   setCorrectionDecisions: (decisions: Record<string, string>) => void,
   setEnrichedDataCache: (cache: any) => void,
-  setPendingWordsInput: (words: string[]) => void
+  setPendingWordsInput: (words: string[]) => void,
+  phrases: Sentence[],
+  setPhrases: (phrases: Sentence[]) => void,
+  loadPhrases: () => Promise<void>
 ) => {
+  const [detectedPhrases, setDetectedPhrases] = useState<string[]>([]);
+  const [isPhraseWarningOpen, setIsPhraseWarningOpen] = useState(false);
+
+  const isPhraseInput = (text: string): boolean => {
+    const wordCount = text.split(' ').length;
+    const hasPunctuation = /[.!?,;:]/.test(text);
+    return wordCount >= 3 || hasPunctuation;
+  };
   const handleAddWord = async () => {
     if (!newWord.trim()) return;
 
     const wordsToAdd = newWord.split(',').map(w => w.trim()).filter(w => w);
+
+    const phrasesDetected = wordsToAdd.filter(w => isPhraseInput(w));
+
+    if (phrasesDetected.length > 0) {
+      setDetectedPhrases(phrasesDetected);
+      setIsPhraseWarningOpen(true);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -272,6 +294,61 @@ export const useWordActions = (
     }
   };
 
+  const handleAddPhrase = async (phraseText: string) => {
+    try {
+      setIsLoading(true);
+      const result = await apiClient.addSentence(phraseText);
+      setPhrases([result.sentence, ...phrases]);
+      toast({
+        title: 'Фраза добавлена!',
+        description: 'Сохранено в разделе "Фразы"'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось добавить фразу',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeletePhrase = async (phraseId: number) => {
+    try {
+      await apiClient.deleteSentence(phraseId);
+      setPhrases(phrases.filter(p => p.id !== phraseId));
+      toast({
+        title: 'Фраза удалена',
+        description: 'Фраза удалена из словаря'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить фразу',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleMovePhraseToSection = async () => {
+    setIsPhraseWarningOpen(false);
+    setNewWord('');
+    setIsAddDialogOpen(false);
+    
+    for (const phrase of detectedPhrases) {
+      await handleAddPhrase(phrase);
+    }
+    
+    setViewMode('phrases');
+    setDetectedPhrases([]);
+  };
+
+  const handleCancelPhraseWarning = () => {
+    setIsPhraseWarningOpen(false);
+    setDetectedPhrases([]);
+  };
+
   return {
     handleAddWord,
     handleStatusChange,
@@ -279,6 +356,12 @@ export const useWordActions = (
     handleAddWordSet,
     handleAiGenerate,
     handleCategoryClick,
-    handleCategorizeWords
+    handleCategorizeWords,
+    handleAddPhrase,
+    handleDeletePhrase,
+    handleMovePhraseToSection,
+    handleCancelPhraseWarning,
+    detectedPhrases,
+    isPhraseWarningOpen
   };
 };

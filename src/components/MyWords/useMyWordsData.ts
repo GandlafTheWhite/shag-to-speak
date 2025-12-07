@@ -4,10 +4,12 @@ import { apiClient } from '@/utils/api';
 import { CATEGORIES } from '@/data/categories';
 import { type Word } from '../words/WordCard';
 import type { User } from '@/pages/Index';
+import type { Sentence } from '@/types/sentence';
 
 export const useMyWordsData = (user: User, updateUser: (data: Partial<User>) => void) => {
   const [words, setWords] = useState<Word[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'categories'>('list');
+  const [phrases, setPhrases] = useState<Sentence[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'categories' | 'phrases'>('list');
   const [filterStatus, setFilterStatus] = useState<'all' | 'learning' | 'done'>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [newWord, setNewWord] = useState('');
@@ -22,6 +24,7 @@ export const useMyWordsData = (user: User, updateUser: (data: Partial<User>) => 
 
   useEffect(() => {
     loadWords();
+    loadPhrases();
   }, []);
 
   const loadWords = async () => {
@@ -57,6 +60,21 @@ export const useMyWordsData = (user: User, updateUser: (data: Partial<User>) => 
     }
   };
 
+  const loadPhrases = async () => {
+    try {
+      const response = await apiClient.getSentences();
+      setPhrases(response.sentences);
+    } catch (error) {
+      console.error('Error loading phrases:', error);
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить фразы',
+        variant: 'destructive'
+      });
+      setPhrases([]);
+    }
+  };
+
   const filteredWords = words.filter(w => {
     const statusMatch = filterStatus === 'all' || w.status === filterStatus;
     const categoryMatch = selectedCategory === 'all' || w.category === selectedCategory;
@@ -77,6 +95,8 @@ export const useMyWordsData = (user: User, updateUser: (data: Partial<User>) => 
   return {
     words,
     setWords,
+    phrases,
+    setPhrases,
     viewMode,
     setViewMode,
     filterStatus,
@@ -100,6 +120,7 @@ export const useMyWordsData = (user: User, updateUser: (data: Partial<User>) => 
     isCategorizing,
     setIsCategorizing,
     loadWords,
+    loadPhrases,
     filteredWords,
     wordsByCategory,
     categoriesWithWords,

@@ -9,7 +9,8 @@ const API_URLS = {
   telegramLink: 'https://functions.poehali.dev/c2111525-7f03-404a-8a73-22afb051c82f',
   exerciseCategories: 'https://functions.poehali.dev/2cb6dda2-5dee-4cc0-afe0-67993e14943d',
   settings: 'https://functions.poehali.dev/988818e5-d5bb-4ef3-8d05-bd6be60b40a0',
-  enrichWords: 'https://functions.poehali.dev/5c93fe2a-0fff-4db2-9d06-24cd6af4f983'
+  enrichWords: 'https://functions.poehali.dev/5c93fe2a-0fff-4db2-9d06-24cd6af4f983',
+  sentences: 'https://functions.poehali.dev/e971fd37-f9fe-411b-a599-470f989d69f0'
 };
 
 export interface ApiError {
@@ -425,6 +426,49 @@ class ApiClient {
     if (!response.ok) {
       const error: ApiError = await response.json();
       throw new Error(error.error || 'Failed to enrich word');
+    }
+
+    return await response.json();
+  }
+
+  async getSentences(): Promise<{ sentences: Array<{ id: number; english_text: string; russian_translation: string; created_at: string }> }> {
+    const response = await fetch(API_URLS.sentences, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to get sentences');
+    }
+
+    return await response.json();
+  }
+
+  async addSentence(text: string): Promise<{ sentence: { id: number; english_text: string; russian_translation: string; created_at: string } }> {
+    const response = await fetch(API_URLS.sentences, {
+      method: 'POST',
+      headers: this.getHeaders(),
+      body: JSON.stringify({ text }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to add sentence');
+    }
+
+    return await response.json();
+  }
+
+  async deleteSentence(id: number): Promise<void> {
+    const response = await fetch(`${API_URLS.sentences}?id=${id}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to delete sentence');
     }
 
     const data = await response.json();

@@ -5,6 +5,8 @@ import type { User } from '@/pages/Index';
 import WordsListView from './words/WordsListView';
 import WordsCategoriesView from './words/WordsCategoriesView';
 import CorrectionSuggestionsDialog from './words/CorrectionSuggestionsDialog';
+import PhrasesListView from './phrases/PhrasesListView';
+import PhraseDetectionDialog from './phrases/PhraseDetectionDialog';
 import { useMyWordsData } from './MyWords/useMyWordsData';
 import { useSpellCorrection } from './MyWords/useSpellCorrection';
 import { useWordActions } from './MyWords/useWordActions';
@@ -52,7 +54,10 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     spellCorrection.setCurrentCorrectionIndex,
     spellCorrection.setCorrectionDecisions,
     spellCorrection.setEnrichedDataCache,
-    spellCorrection.setPendingWordsInput
+    spellCorrection.setPendingWordsInput,
+    dataState.phrases,
+    dataState.setPhrases,
+    dataState.loadPhrases
   );
 
   return (
@@ -71,14 +76,18 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-4xl animate-fade-in">
         <Tabs value={dataState.viewMode} onValueChange={(v: any) => dataState.setViewMode(v)} className="mb-6">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2">
+          <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3">
             <TabsTrigger value="list">
-              <Icon name="List" size={18} className="mr-2" />
-              Списком
+              <Icon name="BookOpen" size={18} className="mr-2" />
+              Слова
+            </TabsTrigger>
+            <TabsTrigger value="phrases">
+              <Icon name="MessageSquare" size={18} className="mr-2" />
+              Фразы
             </TabsTrigger>
             <TabsTrigger value="categories">
               <Icon name="Grid3x3" size={18} className="mr-2" />
-              По категориям
+              Категории
             </TabsTrigger>
           </TabsList>
 
@@ -109,6 +118,15 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
             />
           </TabsContent>
 
+          <TabsContent value="phrases" className="mt-6">
+            <PhrasesListView
+              phrases={dataState.phrases}
+              onAddPhrase={wordActions.handleAddPhrase}
+              onDeletePhrase={wordActions.handleDeletePhrase}
+              isLoading={dataState.isLoading}
+            />
+          </TabsContent>
+
           <TabsContent value="categories" className="mt-6">
             <WordsCategoriesView
               categoriesWithWords={dataState.categoriesWithWords}
@@ -130,6 +148,13 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         isOpen={spellCorrection.pendingCorrections.length > 0 && spellCorrection.currentCorrectionIndex < spellCorrection.pendingCorrections.length}
         isProcessing={spellCorrection.isProcessingCorrection}
         isFinalizing={spellCorrection.isFinalizing}
+      />
+
+      <PhraseDetectionDialog
+        phrases={wordActions.detectedPhrases}
+        isOpen={wordActions.isPhraseWarningOpen}
+        onMoveToPhrasesSection={wordActions.handleMovePhraseToSection}
+        onCancel={wordActions.handleCancelPhraseWarning}
       />
     </div>
   );
