@@ -109,6 +109,10 @@ const Index = () => {
     }
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentPage]);
+
   return (
     <div className="min-h-screen bg-background">
       {currentPage === 'landing' && <LandingPage onLogin={handleLogin} />}
