@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.0.3';
+export const APP_VERSION = '1.0.2';
 
 export function checkAndMigrateVersion(): boolean {
   const storedVersion = localStorage.getItem('app_version');
