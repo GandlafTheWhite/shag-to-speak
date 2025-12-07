@@ -76,43 +76,47 @@ export const useSpellCorrection = (
     try {
       setIsLoading(true);
       
-      console.log('[SpellCorrection] pendingWordsInput:', pendingWordsInput);
-      console.log('[SpellCorrection] correctionDecisions:', correctionDecisions);
+      console.log('[SpellCorrection] DEBUG - pendingWordsInput:', pendingWordsInput);
+      console.log('[SpellCorrection] DEBUG - correctionDecisions:', correctionDecisions);
+      console.log('[SpellCorrection] DEBUG - correctionDecisions keys:', Object.keys(correctionDecisions));
       
-      const finalWords = pendingWordsInput.map(word => {
-        const selectedWord = correctionDecisions[word] || word;
-        console.log(`[SpellCorrection] Mapping: "${word}" -> "${selectedWord}"`);
-        return selectedWord;
-      });
-      
+      const finalWords: string[] = [];
       const updatedEnrichedData: any = {};
       
       for (const originalWord of pendingWordsInput) {
-        const selectedWord = correctionDecisions[originalWord] || originalWord;
+        const lowerOriginal = originalWord.toLowerCase();
+        
+        const selectedWord = correctionDecisions[originalWord] 
+          || correctionDecisions[lowerOriginal] 
+          || originalWord;
+        
+        console.log(`[SpellCorrection] DEBUG - Processing: "${originalWord}" -> decision: "${correctionDecisions[originalWord]}" -> selected: "${selectedWord}"`);
+        
         const selectedWordLower = selectedWord.toLowerCase();
+        finalWords.push(selectedWordLower);
         
         if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
           console.log('[SpellCorrection] Fetching enrichment for corrected word:', selectedWord);
           const correctedEnrichment = await fetchEnrichmentForWord(selectedWord);
           console.log('[SpellCorrection] Received enrichment:', correctedEnrichment);
-          console.log('[SpellCorrection] Using key (selectedWord lowercase):', selectedWordLower);
           updatedEnrichedData[selectedWordLower] = {
             ...correctedEnrichment,
             corrected_word: selectedWordLower,
             was_corrected: false
           };
-        } else if (enrichedDataCache[originalWord]) {
+        } else if (enrichedDataCache[originalWord] || enrichedDataCache[lowerOriginal]) {
           console.log('[SpellCorrection] Using cached enrichment for:', originalWord);
+          const cachedData = enrichedDataCache[originalWord] || enrichedDataCache[lowerOriginal];
           updatedEnrichedData[selectedWordLower] = {
-            ...enrichedDataCache[originalWord],
+            ...cachedData,
             corrected_word: selectedWordLower,
             was_corrected: false
           };
         }
       }
       
-      console.log('[SpellCorrection] Final words:', finalWords);
-      console.log('[SpellCorrection] Updated enriched data keys:', Object.keys(updatedEnrichedData));
+      console.log('[SpellCorrection] DEBUG - Final words to send:', finalWords);
+      console.log('[SpellCorrection] DEBUG - Enriched data keys:', Object.keys(updatedEnrichedData));
       
       const result = await apiClient.addWords(finalWords, updatedEnrichedData);
       
