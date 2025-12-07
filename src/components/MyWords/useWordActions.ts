@@ -60,7 +60,7 @@ export const useWordActions = (
           setCurrentCorrectionIndex(0);
           setCorrectionDecisions({});
           setEnrichedDataCache(checkData.enriched_data);
-          setPendingWordsInput(wordsToAdd);
+          setPendingWordsInput(wordsToAdd.map(w => w.toLowerCase()));
           setIsLoading(false);
           return;
         }

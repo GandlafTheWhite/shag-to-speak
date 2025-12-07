@@ -86,12 +86,16 @@ export const useSpellCorrection = (
         const selectedWord = correctionDecisions[originalWord] || originalWord;
         
         if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
+          console.log('[SpellCorrection] Fetching enrichment for corrected word:', correctionDecisions[originalWord]);
           const correctedEnrichment = await fetchEnrichmentForWord(correctionDecisions[originalWord]);
+          console.log('[SpellCorrection] Received enrichment:', correctedEnrichment);
+          console.log('[SpellCorrection] Using key:', correctedEnrichment.corrected_word);
           updatedEnrichedData[correctedEnrichment.corrected_word] = {
             ...correctedEnrichment,
             was_corrected: false
           };
         } else if (enrichedDataCache[originalWord]) {
+          console.log('[SpellCorrection] Using cached enrichment for:', originalWord);
           updatedEnrichedData[selectedWord] = {
             ...enrichedDataCache[originalWord],
             corrected_word: selectedWord,
@@ -99,6 +103,9 @@ export const useSpellCorrection = (
           };
         }
       }
+      
+      console.log('[SpellCorrection] Final words:', finalWords);
+      console.log('[SpellCorrection] Updated enriched data keys:', Object.keys(updatedEnrichedData));
       
       const result = await apiClient.addWords(finalWords, updatedEnrichedData);
       

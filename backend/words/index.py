@@ -315,6 +315,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             if provided_enriched_data:
                 print(f'Using provided enriched data for {len(words_to_check)} words')
+                print(f'words_to_check: {words_to_check}')
+                print(f'provided_enriched_data keys: {list(provided_enriched_data.keys())}')
                 enriched_data = provided_enriched_data
             else:
                 print(f'Checking and enriching {len(words_to_check)} words: {words_to_check}')
