@@ -231,21 +231,18 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
       for (const originalWord of pendingWordsInput) {
         const selectedWord = correctionDecisions[originalWord] || originalWord;
         
-        if (enrichedDataCache[originalWord]) {
-          if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
-            const correctedEnrichment = await fetchEnrichmentForWord(correctionDecisions[originalWord]);
-            updatedEnrichedData[selectedWord] = {
-              ...correctedEnrichment,
-              corrected_word: selectedWord,
-              was_corrected: false
-            };
-          } else {
-            updatedEnrichedData[selectedWord] = {
-              ...enrichedDataCache[originalWord],
-              corrected_word: selectedWord,
-              was_corrected: false
-            };
-          }
+        if (correctionDecisions[originalWord] && correctionDecisions[originalWord] !== originalWord) {
+          const correctedEnrichment = await fetchEnrichmentForWord(correctionDecisions[originalWord]);
+          updatedEnrichedData[correctedEnrichment.corrected_word] = {
+            ...correctedEnrichment,
+            was_corrected: false
+          };
+        } else if (enrichedDataCache[originalWord]) {
+          updatedEnrichedData[selectedWord] = {
+            ...enrichedDataCache[originalWord],
+            corrected_word: selectedWord,
+            was_corrected: false
+          };
         }
       }
       
@@ -305,8 +302,15 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
 
       if (response.ok) {
         const data = await response.json();
-        return data.enriched_data[word] || {
-          corrected_word: word,
+        const wordLower = word.toLowerCase();
+        const enrichment = data.enriched_data[wordLower] || data.enriched_data[word];
+        
+        if (enrichment) {
+          return enrichment;
+        }
+        
+        return {
+          corrected_word: wordLower,
           was_corrected: false,
           suggestions: [],
           translation: '...',
