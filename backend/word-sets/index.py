@@ -6,9 +6,84 @@ Returns: HTTP response со списком наборов или результ�
 
 import json
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
+from datetime import datetime, timedelta
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+
+def check_limit(cursor, user_id: int, limit_type: str) -> Tuple[bool, str]:
+    """Проверяет лимит и возвращает (success, error_message)"""
+    cursor.execute(
+        """SELECT subscription_tier, subscription_end_date, trial_end_date 
+           FROM t_p7147437_shag_to_speak.users WHERE id = %s""",
+        (user_id,)
+    )
+    user = cursor.fetchone()
+    
+    if not user:
+        return False, 'User not found'
+    
+    tier = user['subscription_tier']
+    now = datetime.now()
+    
+    if tier == 'trial':
+        if not user['trial_end_date'] or now > user['trial_end_date']:
+            return False, '⚠️ Пробный период истёк. Оформите подписку для продолжения.'
+    elif not user['subscription_end_date'] or now > user['subscription_end_date']:
+        return False, '⚠️ Подписка истекла. Продлите доступ для продолжения.'
+    
+    cursor.execute(
+        f"SELECT {limit_type}_limit FROM subscription_plans WHERE tier = %s",
+        (tier if tier != 'trial' else 'basic',)
+    )
+    plan = cursor.fetchone()
+    limit = plan[f'{limit_type}_limit']
+    
+    if limit == -1:
+        return True, ''
+    
+    period_start = datetime(now.year, now.month, 1).date()
+    cursor.execute(
+        f"""SELECT {limit_type} FROM subscription_usage 
+           WHERE user_id = %s AND period_start = %s""",
+        (user_id, period_start)
+    )
+    usage = cursor.fetchone()
+    current = usage[limit_type] if usage else 0
+    
+    if current >= limit:
+        messages = {
+            'words_added': 'Достигнут лимит добавления слов',
+            'word_sets_added': 'Достигнут лимит добавления наборов',
+            'exercises_completed': 'Достигнут лимит упражнений',
+            'status_changes': 'Достигнут лимит изменений статуса'
+        }
+        return False, f"⚠️ {messages[limit_type]}. Обновите подписку!"
+    
+    return True, ''
+
+
+def increment_usage(cursor, conn, user_id: int, limit_type: str):
+    """Увеличить счётчик использования"""
+    now = datetime.now()
+    period_start = datetime(now.year, now.month, 1).date()
+    period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    
+    cursor.execute(
+        """INSERT INTO subscription_usage (user_id, period_start, period_end)
+           VALUES (%s, %s, %s)
+           ON CONFLICT (user_id, period_start) DO NOTHING""",
+        (user_id, period_start, period_end)
+    )
+    
+    cursor.execute(
+        f"""UPDATE subscription_usage 
+           SET {limit_type} = {limit_type} + 1
+           WHERE user_id = %s AND period_start = %s""",
+        (user_id, period_start)
+    )
+    conn.commit()
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -131,18 +206,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            cursor.execute(
-                "SELECT COUNT(*) as count FROM t_p7147437_shag_to_speak.words WHERE user_id = %s",
-                (user_id,)
-            )
-            current_count = cursor.fetchone()['count']
-            
-            word_limit = 50 if user['status'] == 'free' else 999
-            if current_count + len(set_words) > word_limit:
+            success, error_msg = check_limit(cursor, user_id, 'word_sets_added')
+            if not success:
                 return {
                     'statusCode': 403,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'error': f'Word limit exceeded. Max: {word_limit}'}),
+                    'body': json.dumps({'error': error_msg, 'limit_exceeded': True}),
                     'isBase64Encoded': False
                 }
             
@@ -176,6 +245,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': new_word['status'],
                     'recall_count': new_word['recall_count']
                 })
+            
+            if added_words:
+                increment_usage(cursor, conn, user_id, 'word_sets_added')
             
             conn.commit()
             

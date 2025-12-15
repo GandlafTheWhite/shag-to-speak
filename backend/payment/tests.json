@@ -1,0 +1,18 @@
+{
+  "tests": [
+    {
+      "name": "Get subscription status",
+      "method": "GET",
+      "path": "/?action=status",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "tier": "string",
+        "status": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

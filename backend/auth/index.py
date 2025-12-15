@@ -9,6 +9,7 @@ import os
 import hashlib
 import hmac
 from typing import Dict, Any
+from datetime import datetime, timedelta
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -89,6 +90,28 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 (email, password_hash, name, phone, preferences)
             )
             user = cursor.fetchone()
+            user_id = user['id']
+            
+            trial_end = datetime.now() + timedelta(days=7)
+            
+            cursor.execute(
+                """UPDATE t_p7147437_shag_to_speak.users 
+                   SET subscription_tier = 'trial',
+                       trial_end_date = %s,
+                       is_trial_used = TRUE
+                   WHERE id = %s""",
+                (trial_end, user_id)
+            )
+            
+            period_start = datetime(datetime.now().year, datetime.now().month, 1).date()
+            period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            
+            cursor.execute(
+                """INSERT INTO subscription_usage (user_id, period_start, period_end)
+                   VALUES (%s, %s, %s)""",
+                (user_id, period_start, period_end)
+            )
+            
             conn.commit()
             
             token = create_token(user['id'], user['email'])
@@ -116,7 +139,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'theme': user.get('theme', 'light'),
                         'onboarding_completed': user.get('onboarding_completed', False)
                     },
-                    'token': token
+                    'token': token,
+                    'subscription': {
+                        'tier': 'trial',
+                        'trial_end_date': trial_end.isoformat(),
+                        'message': '🎉 Вам предоставлен 7-дневный пробный период по тарифу Basic!'
+                    }
                 }),
                 'isBase64Encoded': False
             }

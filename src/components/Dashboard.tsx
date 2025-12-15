@@ -16,6 +16,7 @@ import WordEnrichmentProgress from './WordEnrichmentProgress';
 import InstallPWAPrompt from './InstallPWAPrompt';
 import OfflineIndicator from './OfflineIndicator';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   user: User;
@@ -29,6 +30,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
   const [newWord, setNewWord] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const wordLimit = user.status === 'free' ? 50 : 999;
   const progressPercent = (user.word_count / wordLimit) * 100;
 
@@ -90,6 +92,21 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
                 {user.status === 'free' ? 'F' : 'P'}
               </span>
             </div>
+            <Button 
+              onClick={() => navigate('/subscription')}
+              className="hidden sm:flex bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 gap-2"
+              size="sm"
+            >
+              <Icon name="Sparkles" size={16} />
+              Подписка
+            </Button>
+            <Button 
+              onClick={() => navigate('/subscription')}
+              className="sm:hidden bg-gradient-to-r from-purple-500 to-pink-500 text-white p-2"
+              size="sm"
+            >
+              <Icon name="Sparkles" size={16} />
+            </Button>
             <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')} className="flex-shrink-0">
               <Icon name="Settings" size={18} />
