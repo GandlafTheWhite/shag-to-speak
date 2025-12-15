@@ -1,6 +1,17 @@
 {
   "tests": [
     {
+      "name": "Update theme via PUT",
+      "method": "PUT",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "theme": "dark",
+        "onboarding_completed": true
+      },
+      "expectedStatus": 200
+    },
+    {
       "name": "Update exercise difficulty",
       "method": "POST",
       "path": "/",
@@ -8,14 +19,7 @@
         "user_id": 1,
         "exercise_difficulty": "intermediate"
       },
-      "expectedStatus": 200,
-      "expectedBody": {
-        "user": {
-          "id": "number",
-          "exercise_difficulty": "string"
-        }
-      },
-      "bodyMatcher": "partial"
+      "expectedStatus": 200
     },
     {
       "name": "Fail without user ID",

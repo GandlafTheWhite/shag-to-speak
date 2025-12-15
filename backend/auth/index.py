@@ -83,9 +83,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """INSERT INTO t_p7147437_shag_to_speak.users 
-                   (email, password_hash, name, phone, status, preferences, daily_exercises_count)
-                   VALUES (%s, %s, %s, %s, 'free', %s, 0)
-                   RETURNING id, email, name, phone, status, preferences""",
+                   (email, password_hash, name, phone, status, preferences, daily_exercises_count, theme, onboarding_completed)
+                   VALUES (%s, %s, %s, %s, 'free', %s, 0, 'light', FALSE)
+                   RETURNING id, email, name, phone, status, preferences, theme, onboarding_completed""",
                 (email, password_hash, name, phone, preferences)
             )
             user = cursor.fetchone()
@@ -112,7 +112,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
                         'exercises_remaining': 3,
-                        'daily_exercises_count': 0
+                        'daily_exercises_count': 0,
+                        'theme': user.get('theme', 'light'),
+                        'onboarding_completed': user.get('onboarding_completed', False)
                     },
                     'token': token
                 }),
@@ -134,7 +136,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             password_hash = hash_password(password)
             
             cursor.execute(
-                """SELECT id, email, name, phone, status, preferences, daily_exercises_count, last_exercise_date
+                """SELECT id, email, name, phone, status, preferences, daily_exercises_count, last_exercise_date, 
+                          theme, onboarding_completed, profile_completed
                    FROM t_p7147437_shag_to_speak.users 
                    WHERE email = %s AND password_hash = %s""",
                 (email, password_hash)
@@ -175,7 +178,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
                         'exercises_remaining': exercises_remaining,
-                        'daily_exercises_count': daily_count
+                        'daily_exercises_count': daily_count,
+                        'theme': user.get('theme', 'light'),
+                        'onboarding_completed': user.get('onboarding_completed', False),
+                        'profile_completed': user.get('profile_completed', False)
                     },
                     'token': token
                 }),

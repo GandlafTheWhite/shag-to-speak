@@ -15,6 +15,7 @@ import PointsDisplay from './gamification/PointsDisplay';
 import WordEnrichmentProgress from './WordEnrichmentProgress';
 import InstallPWAPrompt from './InstallPWAPrompt';
 import OfflineIndicator from './OfflineIndicator';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 interface DashboardProps {
   user: User;
@@ -89,6 +90,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
                 {user.status === 'free' ? 'F' : 'P'}
               </span>
             </div>
+            <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')} className="flex-shrink-0">
               <Icon name="Settings" size={18} />
             </Button>

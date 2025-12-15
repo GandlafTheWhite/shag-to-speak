@@ -6,8 +6,8 @@ from psycopg2.extras import RealDictCursor
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Update user settings including exercise difficulty preference
-    Args: event with httpMethod, body (user_id, exercise_difficulty, preferences)
+    Business: Update user settings including exercise difficulty, theme, and onboarding status
+    Args: event with httpMethod, body (user_id, exercise_difficulty, preferences, theme, onboarding_completed)
           context with request_id
     Returns: HTTP response with updated user data
     '''
@@ -18,7 +18,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'statusCode': 200,
             'headers': {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST, OPTIONS',
+                'Access-Control-Allow-Methods': 'POST, PUT, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-Auth-Token',
                 'Access-Control-Max-Age': '86400'
             },
@@ -26,7 +26,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method != 'POST':
+    if method not in ['POST', 'PUT']:
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -39,6 +39,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         user_id = body_data.get('user_id')
         exercise_difficulty = body_data.get('exercise_difficulty')
         preferences = body_data.get('preferences')
+        theme = body_data.get('theme')
+        onboarding_completed = body_data.get('onboarding_completed')
         
         if not user_id:
             return {
@@ -62,6 +64,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         if preferences is not None:
             update_parts.append('preferences = %s')
             params.append(preferences)
+        
+        if theme and theme in ['light', 'dark']:
+            update_parts.append('theme = %s')
+            params.append(theme)
+        
+        if onboarding_completed is not None:
+            update_parts.append('onboarding_completed = %s')
+            params.append(onboarding_completed)
         
         if not update_parts:
             cur.close()

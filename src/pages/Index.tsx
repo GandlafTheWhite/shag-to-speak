@@ -8,8 +8,10 @@ import Help from '@/components/Help';
 import Settings from '@/components/Settings';
 import Achievements from '@/components/Achievements';
 import ProfileSetupWizard from '@/components/ProfileSetupWizard';
+import OnboardingPersonalization from '@/components/OnboardingPersonalization';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface User {
   id: number;
@@ -25,14 +27,18 @@ export interface User {
   total_points?: number;
   current_streak?: number;
   longest_streak?: number;
+  theme?: 'light' | 'dark';
+  onboarding_completed?: boolean;
 }
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements'>('landing');
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
   const { toast } = useToast();
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     const storedUser = localStorage.getItem('shagtospeak_user');
@@ -45,8 +51,15 @@ const Index = () => {
       
       setUser(userData);
       
+      if (userData.theme) {
+        setTheme(userData.theme);
+      }
+      
       if (userData.profile_completed === false) {
         setShowProfileSetup(true);
+        setCurrentPage('dashboard');
+      } else if (userData.onboarding_completed === false) {
+        setShowOnboarding(true);
         setCurrentPage('dashboard');
       } else {
         setCurrentPage('dashboard');
@@ -61,8 +74,14 @@ const Index = () => {
     localStorage.setItem('shagtospeak_user', JSON.stringify(userData));
     localStorage.setItem('auth_token', token);
     
+    if (userData.theme) {
+      setTheme(userData.theme);
+    }
+    
     if (userData.profile_completed === false) {
       setShowProfileSetup(true);
+    } else if (userData.onboarding_completed === false) {
+      setShowOnboarding(true);
     }
     
     setCurrentPage('dashboard');
@@ -94,6 +113,11 @@ const Index = () => {
       setUser(updatedUser);
       localStorage.setItem('shagtospeak_user', JSON.stringify(updatedUser));
       setShowProfileSetup(false);
+      
+      if (updatedUser.onboarding_completed === false) {
+        setShowOnboarding(true);
+      }
+      
       toast({
         title: 'Профиль настроен! 🎉',
         description: 'Теперь вы можете пользоваться всеми функциями платформы'
@@ -106,6 +130,28 @@ const Index = () => {
       });
     } finally {
       setIsProfileLoading(false);
+    }
+  };
+
+  const handleCompleteOnboarding = async (theme: 'light' | 'dark') => {
+    if (!user) return;
+    
+    try {
+      await apiClient.updateUserTheme(user.id, theme);
+      const updatedUser = { ...user, theme, onboarding_completed: true };
+      setUser(updatedUser);
+      localStorage.setItem('shagtospeak_user', JSON.stringify(updatedUser));
+      setShowOnboarding(false);
+      toast({
+        title: 'Настройка завершена! ✨',
+        description: 'Приятного использования ShagToSpeak'
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось сохранить настройки',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -137,6 +183,12 @@ const Index = () => {
               initialName={user.name}
               onComplete={handleCompleteProfile}
               isLoading={isProfileLoading}
+            />
+          )}
+          {showOnboarding && (
+            <OnboardingPersonalization 
+              open={showOnboarding}
+              onComplete={handleCompleteOnboarding}
             />
           )}
         </>

@@ -33,6 +33,8 @@ export interface User {
   total_points?: number;
   current_streak?: number;
   longest_streak?: number;
+  theme?: 'light' | 'dark';
+  onboarding_completed?: boolean;
 }
 
 export interface Word {
@@ -367,6 +369,23 @@ class ApiClient {
     }
 
     return await response.json();
+  }
+
+  async updateUserTheme(userId: number, theme: 'light' | 'dark'): Promise<void> {
+    const response = await fetch(API_URLS.settings, {
+      method: 'PUT',
+      headers: this.getHeaders(),
+      body: JSON.stringify({
+        user_id: userId,
+        theme,
+        onboarding_completed: true
+      }),
+    });
+
+    if (!response.ok) {
+      const error: ApiError = await response.json();
+      throw new Error(error.error || 'Failed to update theme');
+    }
   }
 
   async linkTelegram(userId: number, code: string): Promise<{ user: User }> {
