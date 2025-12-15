@@ -33,30 +33,27 @@ const LandingPageContent = ({ onShowModeDialog }: LandingPageContentProps) => {
           <div className="max-w-5xl mx-auto text-center space-y-8">
             <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_forwards]">
               <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-display font-bold text-foreground mb-6 leading-tight break-words px-4">
-                Технологичное решение для изучения и менеджмента английских слов с применением AI
+                Решение для изучения английских слов с применением AI
               </h1>
               
               <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-8 leading-relaxed break-words px-4 max-w-4xl mx-auto">
-                Персонализация • Умная аналитика • Контекстный перевод • Личный словарь • Автоматическое разбиение категорий
+                Персонализация • Умная аналитика • Контекстный перевод • Личный словарь • Автоматическое разбиение категорий • Система управления словами
               </p>
             </div>
 
-            <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] py-8">
+            <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_0.2s_forwards] py-8 space-y-4">
               <YinYangButton onClick={onShowModeDialog} />
+              <p className="text-base sm:text-lg font-medium text-muted-foreground animate-pulse">
+                Начнём путь? Нажми на Инь и Янь!
+              </p>
             </div>
 
-            <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards] flex items-center gap-6 justify-center text-sm text-muted-foreground flex-wrap px-4">
-              <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                <Icon name="Check" size={18} className="text-accent" />
-                <span>Бесплатно</span>
-              </div>
-              <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                <Icon name="Check" size={18} className="text-accent" />
-                <span>Без карты</span>
-              </div>
-              <div className="flex items-center gap-2 hover:text-foreground transition-colors">
-                <Icon name="Check" size={18} className="text-accent" />
-                <span>50 слов бесплатно</span>
+            <div className="opacity-0 animate-[fadeInUp_0.8s_ease-out_0.4s_forwards] flex items-center justify-center px-4">
+              <div className="flex items-center gap-3 px-6 py-3 bg-accent/10 rounded-full border-2 border-accent/30">
+                <Icon name="Sparkles" size={20} className="text-accent" />
+                <span className="text-base sm:text-lg font-semibold text-foreground">
+                  7 дней — полностью бесплатно!
+                </span>
               </div>
             </div>
           </div>
