@@ -8,6 +8,7 @@ import Icon from '@/components/ui/icon';
 import type { User } from '@/pages/Index';
 import { LEARNING_TOPICS } from '@/data/topics';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 interface SettingsProps {
   user: User;
@@ -151,6 +152,31 @@ const Settings = ({ user, onNavigate, updateUser }: SettingsProps) => {
                 У вас активна Premium подписка. Спасибо за поддержку! ⭐
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="font-display">Правовые документы</CardTitle>
+            <CardDescription>
+              Ознакомьтесь с условиями использования сервиса
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full justify-start">
+                <Icon name="FileText" size={20} className="mr-2" />
+                Политика конфиденциальности
+                <Icon name="ExternalLink" size={16} className="ml-auto" />
+              </Button>
+            </Link>
+            <Link to="/terms" target="_blank" rel="noopener noreferrer">
+              <Button variant="outline" className="w-full justify-start">
+                <Icon name="FileText" size={20} className="mr-2" />
+                Пользовательское соглашение
+                <Icon name="ExternalLink" size={16} className="ml-auto" />
+              </Button>
+            </Link>
           </CardContent>
         </Card>
 

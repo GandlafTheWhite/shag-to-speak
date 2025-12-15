@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { Link } from 'react-router-dom';
 
 interface LandingPageContentProps {
   onShowModeDialog: () => void;
@@ -213,6 +214,30 @@ const LandingPageContent = ({ onShowModeDialog }: LandingPageContentProps) => {
           </p>
         </div>
       </section>
+
+      <footer className="border-t bg-muted/30 py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              © 2024 ShagToSpeak. Все права защищены.
+            </div>
+            <div className="flex gap-6 text-sm">
+              <Link 
+                to="/privacy" 
+                className="text-muted-foreground hover:text-primary transition-colors hover:underline"
+              >
+                Политика конфиденциальности
+              </Link>
+              <Link 
+                to="/terms" 
+                className="text-muted-foreground hover:text-primary transition-colors hover:underline"
+              >
+                Пользовательское соглашение
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </>
   );
 };
