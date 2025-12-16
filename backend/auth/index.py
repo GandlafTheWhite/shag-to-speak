@@ -84,16 +84,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """INSERT INTO t_p7147437_shag_to_speak.users 
-                   (email, password_hash, name, phone, status, preferences, daily_exercises_count, theme, onboarding_completed)
-                   VALUES (%s, %s, %s, %s, 'free', %s, 0, 'light', FALSE)
+                   (email, password_hash, name, phone, status, preferences, daily_exercises_count, theme, onboarding_completed, is_trial_used)
+                   VALUES (%s, %s, %s, %s, 'free', %s, 0, 'light', FALSE, FALSE)
                    RETURNING id, email, name, phone, status, preferences, theme, onboarding_completed""",
                 (email, password_hash, name, phone, preferences)
             )
             user = cursor.fetchone()
             user_id = user['id']
-            
-            trial_start = datetime.now()
-            trial_end = trial_start + timedelta(days=7)
             
             period_start = datetime(datetime.now().year, datetime.now().month, 1).date()
             period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
@@ -102,8 +99,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 """INSERT INTO t_p7147437_shag_to_speak.subscription_usage 
                    (user_id, current_tier, subscription_status, subscription_start, subscription_end, period_start, period_end,
                     words_added, word_sets_added, exercises_completed, status_changes)
-                   VALUES (%s, 'trial', 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
-                (user_id, trial_start, trial_end, period_start, period_end)
+                   VALUES (%s, 'none', 'inactive', NULL, NULL, %s, %s, 0, 0, 0, 0)""",
+                (user_id, period_start, period_end)
             )
             
             conn.commit()
@@ -128,17 +125,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'status': user['status'],
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
-                        'exercises_remaining': 20,
+                        'exercises_remaining': 0,
                         'daily_exercises_count': 0,
                         'theme': user.get('theme', 'light'),
                         'onboarding_completed': user.get('onboarding_completed', False)
                     },
                     'token': token,
                     'subscription': {
-                        'tier': 'trial',
-                        'status': 'active',
-                        'trial_end_date': trial_end.isoformat(),
-                        'message': '🎉 Вам предоставлен 7-дневный пробный период по тарифу Basic!'
+                        'tier': 'none',
+                        'status': 'inactive',
+                        'message': '👋 Добро пожаловать! Активируйте бесплатный пробный период на 7 дней.'
                     }
                 }),
                 'isBase64Encoded': False

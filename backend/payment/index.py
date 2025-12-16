@@ -54,8 +54,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """SELECT su.current_tier, su.subscription_status, su.subscription_start, su.subscription_end,
-                          su.words_added, su.word_sets_added, su.exercises_completed, su.status_changes
+                          su.words_added, su.word_sets_added, su.exercises_completed, su.status_changes,
+                          u.is_trial_used
                    FROM t_p7147437_shag_to_speak.subscription_usage su
+                   JOIN t_p7147437_shag_to_speak.users u ON u.id = su.user_id
                    WHERE su.user_id = %s
                    ORDER BY su.subscription_end DESC NULLS LAST
                    LIMIT 1""",
@@ -102,6 +104,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'is_trial': is_trial,
                     'trial_days_left': trial_days_left,
                     'subscription_end_date': sub_end.isoformat() if sub_end else None,
+                    'can_activate_trial': not subscription['is_trial_used'],
                     'limits': {
                         'words_added': {
                             'used': subscription['words_added'],
@@ -125,6 +128,73 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         }
                     },
                     'available_plans': [{'tier': p['tier'], 'price': p['price_rub']} for p in plans]
+                }),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'POST' and action == 'activate_trial':
+            if not user_id_str:
+                return error_response(401, 'User ID required')
+            
+            user_id = int(user_id_str)
+            
+            cursor.execute(
+                """SELECT is_trial_used FROM t_p7147437_shag_to_speak.users WHERE id = %s""",
+                (user_id,)
+            )
+            user = cursor.fetchone()
+            
+            if not user:
+                return error_response(404, 'User not found')
+            
+            if user['is_trial_used']:
+                return error_response(400, 'Пробный период уже был использован')
+            
+            now = datetime.now()
+            trial_start = now
+            trial_end = now + timedelta(days=7)
+            period_start = datetime(now.year, now.month, 1).date()
+            period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+            
+            cursor.execute(
+                """UPDATE t_p7147437_shag_to_speak.subscription_usage
+                   SET current_tier = 'trial',
+                       subscription_status = 'active',
+                       subscription_start = %s,
+                       subscription_end = %s,
+                       words_added = 0,
+                       word_sets_added = 0,
+                       exercises_completed = 0,
+                       status_changes = 0
+                   WHERE user_id = %s AND period_start = %s""",
+                (trial_start, trial_end, user_id, period_start)
+            )
+            
+            if cursor.rowcount == 0:
+                cursor.execute(
+                    """INSERT INTO t_p7147437_shag_to_speak.subscription_usage
+                       (user_id, current_tier, subscription_status, subscription_start, subscription_end,
+                        period_start, period_end, words_added, word_sets_added, exercises_completed, status_changes)
+                       VALUES (%s, 'trial', 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
+                    (user_id, trial_start, trial_end, period_start, period_end)
+                )
+            
+            cursor.execute(
+                """UPDATE t_p7147437_shag_to_speak.users
+                   SET is_trial_used = TRUE
+                   WHERE id = %s""",
+                (user_id,)
+            )
+            
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'success': True,
+                    'message': '🎉 Пробный период на 7 дней активирован!',
+                    'trial_end_date': trial_end.isoformat()
                 }),
                 'isBase64Encoded': False
             }

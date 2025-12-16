@@ -33,13 +33,16 @@ export default function SubscriptionPage() {
   }, []);
 
   const fetchSubscription = async () => {
-    const userId = localStorage.getItem('user_id');
+    const userDataStr = localStorage.getItem('shagtospeak_user');
     
-    if (!userId) {
+    if (!userDataStr) {
       setError('Не найден ID пользователя. Пожалуйста, войдите в систему.');
       setLoading(false);
       return;
     }
+    
+    const userData = JSON.parse(userDataStr);
+    const userId = userData.id?.toString();
     
     try {
       const response = await fetch(`${PAYMENT_URL}?action=status`, {
@@ -67,12 +70,15 @@ export default function SubscriptionPage() {
   };
 
   const handleSubscribe = async (tier: string, price: number) => {
-    const userId = localStorage.getItem('user_id');
+    const userDataStr = localStorage.getItem('shagtospeak_user');
     
-    if (!userId) {
+    if (!userDataStr) {
       alert('Необходимо войти в систему');
       return;
     }
+    
+    const userData = JSON.parse(userDataStr);
+    const userId = userData.id?.toString();
     
     try {
       const response = await fetch(`${PAYMENT_URL}?action=create`, {
