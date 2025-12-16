@@ -43,8 +43,19 @@ def check_subscription_limit(cursor, user_id: int, limit_type: str):
     if sub_end and now > sub_end:
         return False, 'subscription_expired', not is_trial_used
     
+    limit_column_map = {
+        'words_added': 'words_limit',
+        'word_sets_added': 'word_sets_limit',
+        'exercises_completed': 'exercises_limit',
+        'status_changes': 'status_changes_limit'
+    }
+    
+    column_name = limit_column_map.get(limit_type)
+    if not column_name:
+        return False, 'Invalid limit type', not is_trial_used
+    
     cursor.execute(
-        f"""SELECT {limit_type}_limit FROM t_p7147437_shag_to_speak.subscription_plans 
+        f"""SELECT {column_name} FROM t_p7147437_shag_to_speak.subscription_plans 
            WHERE tier = %s""",
         (tier if tier != 'trial' else 'basic',)
     )
@@ -53,7 +64,7 @@ def check_subscription_limit(cursor, user_id: int, limit_type: str):
     if not plan:
         return False, 'Plan not found', not is_trial_used
     
-    limit = plan[f'{limit_type}_limit']
+    limit = plan[column_name]
     
     if limit == -1:
         return True, '', False
