@@ -199,7 +199,7 @@ export default function SubscriptionPage() {
           </Button>
         </div>
         
-        {subscription.tier === 'none' && subscription.can_activate_trial && (
+        {((subscription.tier === 'none' || (subscription.tier === 'trial' && subscription.status !== 'active')) && subscription.can_activate_trial) && (
           <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-6 rounded-2xl mb-8 shadow-lg">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -240,7 +240,7 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        {subscription.status === 'expired' && (
+        {subscription.status === 'expired' && subscription.tier !== 'trial' && subscription.tier !== 'none' && (
           <div className="bg-red-500 text-white p-6 rounded-2xl mb-8 shadow-lg">
             <div className="flex items-center gap-4">
               <Icon name="AlertCircle" size={32} />
@@ -252,39 +252,45 @@ export default function SubscriptionPage() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <h2 className="text-3xl font-bold mb-6 flex items-center gap-3">
-            <Icon name="CreditCard" size={32} className="text-blue-500" />
+        <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 mb-8">
+          <h2 className="text-xl sm:text-3xl font-bold mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+            <Icon name="CreditCard" size={24} className="text-blue-500 sm:w-8 sm:h-8" />
             Моя подписка
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-                <span className="text-gray-600">Текущий тариф:</span>
-                <span className="text-xl font-bold text-blue-600">{tierNames[subscription.tier]}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-blue-50 rounded-xl gap-2">
+                <span className="text-sm sm:text-base text-gray-600">Текущий тариф:</span>
+                <span className="text-lg sm:text-xl font-bold text-blue-600">
+                  {(subscription.tier === 'trial' && subscription.status !== 'active') || subscription.tier === 'none' 
+                    ? 'Нет подписки' 
+                    : tierNames[subscription.tier]}
+                </span>
               </div>
               
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
-                <span className="text-gray-600">Статус:</span>
-                <span className={`text-xl font-bold ${subscription.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
-                  {subscription.status === 'active' ? 'Активна' : 'Истекла'}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-green-50 rounded-xl gap-2">
+                <span className="text-sm sm:text-base text-gray-600">Статус:</span>
+                <span className={`text-lg sm:text-xl font-bold ${subscription.status === 'active' ? 'text-green-600' : 'text-red-600'}`}>
+                  {(subscription.tier === 'trial' && subscription.status !== 'active') || subscription.tier === 'none'
+                    ? 'Не активирована'
+                    : subscription.status === 'active' ? 'Активна' : 'Истекла'}
                 </span>
               </div>
               
               {subscription.subscription_end_date && (
-                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
-                  <span className="text-gray-600">Действует до:</span>
-                  <span className="text-lg font-semibold text-purple-600">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-purple-50 rounded-xl gap-2">
+                  <span className="text-sm sm:text-base text-gray-600">Действует до:</span>
+                  <span className="text-base sm:text-lg font-semibold text-purple-600">
                     {new Date(subscription.subscription_end_date).toLocaleDateString('ru-RU')}
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="space-y-4">
-              <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                <Icon name="Activity" size={20} />
+            <div className="space-y-3 sm:space-y-4">
+              <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 flex items-center gap-2">
+                <Icon name="Activity" size={18} className="sm:w-5 sm:h-5" />
                 Использование лимитов:
               </h3>
               
@@ -299,19 +305,19 @@ export default function SubscriptionPage() {
                 const isUnlimited = limit.limit === -1;
                 
                 return (
-                  <div key={key} className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <Icon name={icon as any} size={16} />
-                        {label}
+                  <div key={key} className="space-y-1.5 sm:space-y-2">
+                    <div className="flex justify-between text-xs sm:text-sm">
+                      <span className="flex items-center gap-1.5 sm:gap-2">
+                        <Icon name={icon as any} size={14} className="sm:w-4 sm:h-4" />
+                        <span className="truncate">{label}</span>
                       </span>
-                      <span className="font-semibold">
+                      <span className="font-semibold whitespace-nowrap ml-2">
                         {limit.used} / {isUnlimited ? '∞' : limit.limit}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                    <div className="w-full bg-gray-200 rounded-full h-2 sm:h-2.5 overflow-hidden">
                       <div 
-                        className={`h-2.5 rounded-full transition-all ${
+                        className={`h-2 sm:h-2.5 rounded-full transition-all ${
                           percentage > 80 ? 'bg-red-500' : percentage > 50 ? 'bg-yellow-500' : 'bg-green-500'
                         }`}
                         style={{ width: isUnlimited ? '100%' : `${percentage}%` }}
@@ -325,46 +331,46 @@ export default function SubscriptionPage() {
         </div>
 
         <div id="plans">
-          <h2 className="text-3xl font-bold text-center mb-8">Доступные тарифы</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Доступные тарифы</h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             {plans.map(plan => {
               const isCurrentPlan = subscription.tier === plan.tier;
               
               return (
                 <div 
                   key={plan.tier}
-                  className={`relative border-2 rounded-2xl p-8 transition-all ${
+                  className={`relative border-2 rounded-2xl p-4 sm:p-8 transition-all ${
                     isCurrentPlan 
-                      ? 'border-blue-500 bg-blue-50 shadow-2xl scale-105' 
+                      ? 'border-blue-500 bg-blue-50 shadow-2xl md:scale-105' 
                       : plan.popular
-                      ? 'border-purple-300 shadow-xl hover:shadow-2xl hover:scale-105'
-                      : 'border-gray-200 shadow-lg hover:shadow-xl hover:scale-105'
+                      ? 'border-purple-300 shadow-xl hover:shadow-2xl md:hover:scale-105'
+                      : 'border-gray-200 shadow-lg hover:shadow-xl md:hover:scale-105'
                   }`}
                 >
                   {plan.popular && (
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+                    <div className="absolute -top-3 sm:-top-4 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-bold shadow-lg">
                         Популярный
                       </span>
                     </div>
                   )}
                   
-                  <div className={`w-16 h-16 bg-gradient-to-br ${plan.color} rounded-2xl flex items-center justify-center mb-4`}>
-                    <Icon name="Zap" size={32} className="text-white" />
+                  <div className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br ${plan.color} rounded-2xl flex items-center justify-center mb-3 sm:mb-4`}>
+                    <Icon name="Zap" size={24} className="text-white sm:w-8 sm:h-8" />
                   </div>
                   
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold">{plan.price} ₽</span>
-                    <span className="text-gray-600">/мес</span>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h3>
+                  <div className="mb-4 sm:mb-6">
+                    <span className="text-3xl sm:text-4xl font-bold">{plan.price} ₽</span>
+                    <span className="text-sm sm:text-base text-gray-600">/мес</span>
                   </div>
                   
-                  <ul className="space-y-3 mb-8">
+                  <ul className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
                     {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-3">
-                        <Icon name="Check" size={20} className="text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
+                      <li key={i} className="flex items-start gap-2 sm:gap-3">
+                        <Icon name="Check" size={16} className="text-green-500 flex-shrink-0 mt-0.5 sm:w-5 sm:h-5" />
+                        <span className="text-sm sm:text-base text-gray-700">{feature}</span>
                       </li>
                     ))}
                   </ul>
@@ -372,14 +378,14 @@ export default function SubscriptionPage() {
                   {isCurrentPlan ? (
                     <button 
                       disabled
-                      className="w-full bg-gray-300 text-gray-600 py-3 rounded-xl font-bold cursor-not-allowed"
+                      className="w-full bg-gray-300 text-gray-600 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold cursor-not-allowed"
                     >
                       Текущий тариф
                     </button>
                   ) : (
                     <button 
                       onClick={() => handleSubscribe(plan.tier, plan.price)}
-                      className={`w-full bg-gradient-to-r ${plan.color} text-white py-3 rounded-xl font-bold hover:opacity-90 transition shadow-lg`}
+                      className={`w-full bg-gradient-to-r ${plan.color} text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold hover:opacity-90 transition shadow-lg`}
                     >
                       Выбрать
                     </button>

@@ -16,6 +16,7 @@ import WordEnrichmentProgress from './WordEnrichmentProgress';
 import InstallPWAPrompt from './InstallPWAPrompt';
 import OfflineIndicator from './OfflineIndicator';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import SubscriptionLimitsCard from './SubscriptionLimitsCard';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
@@ -163,37 +164,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </p>
         </div>
 
-        <div className="grid gap-4 sm:gap-6 mb-6 sm:mb-8 grid-cols-1 sm:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Слов в словаре
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {user.word_count} / {wordLimit}
-              </div>
-              <Progress value={progressPercent} className="mt-2" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Упражнений сегодня
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-foreground">
-                {user.exercises_remaining}
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {user.status === 'free' ? 'осталось из 3' : 'без ограничений'}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <SubscriptionLimitsCard user={user} />
 
 
 
