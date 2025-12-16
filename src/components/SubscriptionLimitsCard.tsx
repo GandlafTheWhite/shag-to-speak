@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -25,10 +24,10 @@ const PAYMENT_URL = 'https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f342
 
 interface SubscriptionLimitsCardProps {
   user: User;
+  onNavigateToSubscription?: () => void;
 }
 
-export default function SubscriptionLimitsCard({ user }: SubscriptionLimitsCardProps) {
-  const navigate = useNavigate();
+export default function SubscriptionLimitsCard({ user, onNavigateToSubscription }: SubscriptionLimitsCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -158,9 +157,9 @@ export default function SubscriptionLimitsCard({ user }: SubscriptionLimitsCardP
                   })}
                 </div>
 
-                {subscription.status !== 'active' && (
+                {subscription.status !== 'active' && onNavigateToSubscription && (
                   <Button 
-                    onClick={() => navigate('/subscription')}
+                    onClick={onNavigateToSubscription}
                     className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
                   >
                     <Icon name="Sparkles" size={18} className="mr-2" />

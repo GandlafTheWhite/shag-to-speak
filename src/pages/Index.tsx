@@ -9,6 +9,7 @@ import Settings from '@/components/Settings';
 import Achievements from '@/components/Achievements';
 import ProfileSetupWizard from '@/components/ProfileSetupWizard';
 import OnboardingPersonalization from '@/components/OnboardingPersonalization';
+import SubscriptionContent from '@/components/SubscriptionContent';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -33,7 +34,7 @@ export interface User {
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription'>('landing');
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
@@ -170,7 +171,7 @@ const Index = () => {
               if (user.profile_completed === false) {
                 setShowProfileSetup(true);
               } else {
-                setCurrentPage(page);
+                setCurrentPage(page as any);
               }
             }}
             onLogout={handleLogout}
@@ -323,6 +324,30 @@ const Index = () => {
                 setCurrentPage('dashboard');
               } else {
                 setCurrentPage(page);
+              }
+            }}
+          />
+          {showProfileSetup && (
+            <ProfileSetupWizard 
+              open={showProfileSetup}
+              userId={user.id}
+              initialName={user.name}
+              onComplete={handleCompleteProfile}
+              isLoading={isProfileLoading}
+            />
+          )}
+        </>
+      )}
+      {currentPage === 'subscription' && user && (
+        <>
+          <SubscriptionContent 
+            user={user}
+            onNavigate={(page) => {
+              if (user.profile_completed === false) {
+                setShowProfileSetup(true);
+                setCurrentPage('dashboard');
+              } else {
+                setCurrentPage(page as any);
               }
             }}
           />

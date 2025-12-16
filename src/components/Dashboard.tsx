@@ -17,11 +17,10 @@ import InstallPWAPrompt from './InstallPWAPrompt';
 import OfflineIndicator from './OfflineIndicator';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import SubscriptionLimitsCard from './SubscriptionLimitsCard';
-import { useNavigate } from 'react-router-dom';
 
 interface DashboardProps {
   user: User;
-  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements') => void;
+  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription') => void;
   onLogout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -31,7 +30,6 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
   const [newWord, setNewWord] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const navigate = useNavigate();
   const wordLimit = user.status === 'free' ? 50 : 999;
   const progressPercent = (user.word_count / wordLimit) * 100;
 
@@ -94,7 +92,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
               </span>
             </div>
             <Button 
-              onClick={() => navigate('/subscription')}
+              onClick={() => onNavigate('subscription')}
               className="hidden sm:flex bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 gap-2"
               size="sm"
             >
@@ -102,7 +100,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
               Подписка
             </Button>
             <Button 
-              onClick={() => navigate('/subscription')}
+              onClick={() => onNavigate('subscription')}
               className="sm:hidden bg-gradient-to-r from-purple-500 to-pink-500 text-white p-2"
               size="sm"
             >
@@ -164,7 +162,7 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
           </p>
         </div>
 
-        <SubscriptionLimitsCard user={user} />
+        <SubscriptionLimitsCard user={user} onNavigateToSubscription={() => onNavigate('subscription')} />
 
 
 
