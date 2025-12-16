@@ -814,6 +814,30 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
+            cursor.execute(
+                """SELECT su.current_tier, su.exercises_completed
+                   FROM t_p7147437_shag_to_speak.subscription_usage su
+                   WHERE su.user_id = %s
+                   ORDER BY su.subscription_end DESC NULLS LAST
+                   LIMIT 1""",
+                (user_id,)
+            )
+            subscription = cursor.fetchone()
+            
+            if subscription:
+                tier = subscription['current_tier']
+                cursor.execute(
+                    """SELECT exercises_limit FROM t_p7147437_shag_to_speak.subscription_plans 
+                       WHERE tier = %s""",
+                    (tier if tier != 'trial' else 'basic',)
+                )
+                plan = cursor.fetchone()
+                exercises_limit = plan['exercises_limit'] if plan else 20
+                exercises_used = subscription['exercises_completed']
+                exercises_remaining = exercises_limit - exercises_used if exercises_limit != -1 else -1
+            else:
+                exercises_remaining = 0
+            
             query = """SELECT id, english_word, russian_translation, category, 
                               transcription, part_of_speech, example_sentence, difficulty_level
                        FROM t_p7147437_shag_to_speak.words 
@@ -847,7 +871,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({
                     'exercises': exercises,
                     'difficulty': difficulty,
-                    'exercises_remaining': limit - daily_count - 1
+                    'exercises_remaining': exercises_remaining
                 }),
                 'isBase64Encoded': False
             }
