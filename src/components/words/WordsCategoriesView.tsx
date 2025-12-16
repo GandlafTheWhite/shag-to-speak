@@ -1,9 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { type Category } from '@/data/categories';
 import { type Word } from './WordCard';
+
+const PAYMENT_URL = 'https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f34273b0ef7';
 
 interface WordsCategoriesViewProps {
   categoriesWithWords: Category[];
@@ -23,8 +26,47 @@ const WordsCategoriesView = ({
   onCategorizeWords
 }: WordsCategoriesViewProps) => {
   const uncategorizedCount = wordsByCategory['uncategorized']?.length || 0;
+  const [sortLimit, setSortLimit] = useState<{used: number; limit: number} | null>(null);
+
+  useEffect(() => {
+    const fetchSortLimit = async () => {
+      const userDataStr = localStorage.getItem('shagtospeak_user');
+      if (!userDataStr) return;
+      
+      const userData = JSON.parse(userDataStr);
+      const userId = userData.id?.toString();
+      
+      try {
+        const response = await fetch(`${PAYMENT_URL}?action=status`, {
+          headers: { 'X-User-Id': userId }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSortLimit({
+            used: data.limits.status_changes.used,
+            limit: data.limits.status_changes.limit
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch sort limit:', err);
+      }
+    };
+    
+    fetchSortLimit();
+  }, []);
+
   return (
     <>
+      {sortLimit && (
+        <div className="mb-3 flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <Icon name="ArrowUpDown" size={14} className="text-blue-500" />
+          <span>
+            Сортировок: <span className="font-semibold text-foreground">{sortLimit.used} / {sortLimit.limit === -1 ? '∞' : sortLimit.limit}</span>
+          </span>
+        </div>
+      )}
+      
       {uncategorizedCount > 0 && (
         <div className="mb-6 p-3 sm:p-4 bg-accent/30 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-start gap-2 sm:gap-3 min-w-0">
@@ -76,7 +118,7 @@ const WordsCategoriesView = ({
         ))}
       </div>
       
-      {categoriesWithWords.length === 0 && !isLoading && (
+      {categoriesWithWords.length === 0 && !isLoading && uncategorizedCount === 0 && (
         <div className="text-center py-12">
           <Icon name="Folder" size={48} className="mx-auto mb-4 text-muted-foreground" />
           <p className="text-lg text-muted-foreground mb-2">Нет категорий</p>

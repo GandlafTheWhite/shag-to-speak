@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -27,6 +28,7 @@ interface SubscriptionLimitsCardProps {
 }
 
 export default function SubscriptionLimitsCard({ user }: SubscriptionLimitsCardProps) {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -130,7 +132,7 @@ export default function SubscriptionLimitsCard({ user }: SubscriptionLimitsCardP
                     { key: 'words_added', label: 'Добавление слов', icon: 'Plus' },
                     { key: 'word_sets_added', label: 'Наборы слов', icon: 'Package' },
                     { key: 'exercises_completed', label: 'Упражнения', icon: 'Zap' },
-                    { key: 'status_changes', label: 'Изменения статуса', icon: 'Edit' }
+                    { key: 'status_changes', label: 'Сортировки', icon: 'ArrowUpDown' }
                   ].map(({ key, label, icon }) => {
                     const limit = subscription.limits[key as keyof SubscriptionLimits];
                     const percentage = limit.limit > 0 ? Math.min((limit.used / limit.limit) * 100, 100) : 0;
@@ -155,6 +157,16 @@ export default function SubscriptionLimitsCard({ user }: SubscriptionLimitsCardP
                     );
                   })}
                 </div>
+
+                {subscription.status !== 'active' && (
+                  <Button 
+                    onClick={() => navigate('/subscription')}
+                    className="w-full mt-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+                  >
+                    <Icon name="Sparkles" size={18} className="mr-2" />
+                    Продлить подписку
+                  </Button>
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-4">

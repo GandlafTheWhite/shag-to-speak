@@ -523,19 +523,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            success, error_msg, can_activate_trial = check_subscription_limit(cursor, user_id, 'status_changes')
-            if not success:
-                return {
-                    'statusCode': 403,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({
-                        'error': error_msg, 
-                        'limit_exceeded': True,
-                        'can_activate_trial': can_activate_trial
-                    }),
-                    'isBase64Encoded': False
-                }
-            
             cursor.execute(
                 """UPDATE t_p7147437_shag_to_speak.words 
                    SET status = %s
@@ -553,7 +540,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            increment_usage(cursor, conn, user_id, 'status_changes')
             conn.commit()
             
             return {

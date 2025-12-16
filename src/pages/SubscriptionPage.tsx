@@ -150,7 +150,7 @@ export default function SubscriptionPage() {
         '60 слов в месяц',
         '4 набора слов (по 15 шт)',
         '20 упражнений',
-        '10 изменений статуса'
+        '10 сортировок'
       ],
       color: 'from-blue-400 to-blue-600'
     },
@@ -162,7 +162,7 @@ export default function SubscriptionPage() {
         '150 слов в месяц',
         '10 наборов слов',
         '50 упражнений',
-        '20 изменений статуса'
+        '20 сортировок'
       ],
       color: 'from-purple-400 to-purple-600',
       popular: true
@@ -175,7 +175,7 @@ export default function SubscriptionPage() {
         'Безлимит слов',
         'Безлимит наборов',
         'Безлимит упражнений',
-        'Безлимит изменений'
+        'Безлимит сортировок'
       ],
       color: 'from-pink-400 to-pink-600'
     }
@@ -298,7 +298,7 @@ export default function SubscriptionPage() {
                 { key: 'words_added', label: 'Добавление слов', icon: 'Plus' },
                 { key: 'word_sets_added', label: 'Наборы слов', icon: 'Package' },
                 { key: 'exercises_completed', label: 'Упражнения', icon: 'Zap' },
-                { key: 'status_changes', label: 'Изменения', icon: 'Edit' }
+                { key: 'status_changes', label: 'Сортировки', icon: 'ArrowUpDown' }
               ].map(({ key, label, icon }) => {
                 const limit = subscription.limits[key as keyof SubscriptionLimits];
                 const percentage = limit.limit > 0 ? Math.min((limit.used / limit.limit) * 100, 100) : 0;
