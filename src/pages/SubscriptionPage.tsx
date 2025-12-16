@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
+import TrialOfferModal from '@/components/TrialOfferModal';
 
 interface SubscriptionLimits {
   words_added: { used: number; limit: number; remaining: number };
@@ -16,6 +17,7 @@ interface SubscriptionData {
   is_trial: boolean;
   trial_days_left: number;
   subscription_end_date: string | null;
+  can_activate_trial?: boolean;
   limits: SubscriptionLimits;
   available_plans: Array<{ tier: string; price: number }>;
 }
@@ -27,6 +29,7 @@ export default function SubscriptionPage() {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
 
   useEffect(() => {
     fetchSubscription();
@@ -179,6 +182,7 @@ export default function SubscriptionPage() {
   ];
 
   const tierNames: Record<string, string> = {
+    none: 'Нет подписки',
     trial: 'Триал (Basic)',
     basic: 'Basic',
     pro: 'Pro',
@@ -194,6 +198,28 @@ export default function SubscriptionPage() {
             На главную
           </Button>
         </div>
+        
+        {subscription.tier === 'none' && subscription.can_activate_trial && (
+          <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-6 rounded-2xl mb-8 shadow-lg">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <Icon name="Gift" size={32} />
+                <div>
+                  <h3 className="text-xl font-bold">Активируй бесплатный пробный период!</h3>
+                  <p className="text-white/90">7 дней полного доступа к Basic тарифу</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsTrialModalOpen(true)}
+                className="bg-white text-orange-500 px-6 py-3 rounded-xl font-bold hover:bg-gray-100 transition whitespace-nowrap"
+              >
+                <Icon name="Sparkles" size={18} className="inline mr-2" />
+                Активировать триал
+              </button>
+            </div>
+          </div>
+        )}
+        
         {subscription.is_trial && subscription.status === 'active' && (
           <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-6 rounded-2xl mb-8 shadow-lg">
             <div className="flex items-center justify-between">
@@ -369,6 +395,14 @@ export default function SubscriptionPage() {
           <p className="mt-2">Вы можете отменить подписку в любое время</p>
         </div>
       </div>
+
+      <TrialOfferModal 
+        isOpen={isTrialModalOpen}
+        onClose={() => setIsTrialModalOpen(false)}
+        onTrialActivated={() => {
+          fetchSubscription();
+        }}
+      />
     </div>
   );
 }

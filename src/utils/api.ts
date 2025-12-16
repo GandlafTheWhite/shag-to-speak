@@ -230,8 +230,11 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.error || 'Failed to add words');
+      const errorData = await response.json();
+      const error: any = new Error(errorData.error || 'Failed to add words');
+      error.limit_exceeded = errorData.limit_exceeded;
+      error.can_activate_trial = errorData.can_activate_trial;
+      throw error;
     }
 
     return await response.json();
@@ -247,8 +250,11 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.error || 'Failed to update word status');
+      const errorData = await response.json();
+      const error: any = new Error(errorData.error || 'Failed to update word status');
+      error.limit_exceeded = errorData.limit_exceeded;
+      error.can_activate_trial = errorData.can_activate_trial;
+      throw error;
     }
   }
 
@@ -277,8 +283,11 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error: ApiError = await response.json();
-      throw new Error(error.error || 'Failed to get exercises');
+      const errorData = await response.json();
+      const error: any = new Error(errorData.error || 'Failed to get exercises');
+      error.limit_exceeded = errorData.limit_exceeded;
+      error.can_activate_trial = errorData.can_activate_trial;
+      throw error;
     }
 
     return await response.json();

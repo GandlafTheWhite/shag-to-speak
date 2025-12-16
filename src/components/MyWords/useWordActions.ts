@@ -30,7 +30,8 @@ export const useWordActions = (
   setPendingWordsInput: (words: string[]) => void,
   phrases: Sentence[],
   setPhrases: (phrases: Sentence[]) => void,
-  loadPhrases: () => Promise<void>
+  loadPhrases: () => Promise<void>,
+  onTrialOfferNeeded?: () => void
 ) => {
   const [detectedPhrases, setDetectedPhrases] = useState<string[]>([]);
   const [isPhraseWarningOpen, setIsPhraseWarningOpen] = useState(false);
@@ -121,7 +122,13 @@ export const useWordActions = (
           description: result.message
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.limit_exceeded && error?.can_activate_trial && onTrialOfferNeeded) {
+        setIsLoading(false);
+        onTrialOfferNeeded();
+        return;
+      }
+      
       toast({
         title: 'Ошибка',
         description: error instanceof Error ? error.message : 'Не удалось добавить слова',
@@ -140,7 +147,12 @@ export const useWordActions = (
         title: 'Статус обновлен',
         description: `Слово переведено в "${newStatus === 'learning' ? 'Изучаю' : 'Выучил'}"`
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.limit_exceeded && error?.can_activate_trial && onTrialOfferNeeded) {
+        onTrialOfferNeeded();
+        return;
+      }
+      
       toast({
         title: 'Ошибка',
         description: 'Не удалось обновить статус',

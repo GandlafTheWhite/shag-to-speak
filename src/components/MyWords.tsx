@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
@@ -7,6 +8,7 @@ import WordsCategoriesView from './words/WordsCategoriesView';
 import CorrectionSuggestionsDialog from './words/CorrectionSuggestionsDialog';
 import PhrasesListView from './phrases/PhrasesListView';
 import PhraseDetectionDialog from './phrases/PhraseDetectionDialog';
+import TrialOfferModal from './TrialOfferModal';
 import { useMyWordsData } from './MyWords/useMyWordsData';
 import { useSpellCorrection } from './MyWords/useSpellCorrection';
 import { useWordActions } from './MyWords/useWordActions';
@@ -18,6 +20,8 @@ interface MyWordsProps {
 }
 
 const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  
   const dataState = useMyWordsData(user, updateUser);
   
   const spellCorrection = useSpellCorrection(
@@ -57,7 +61,8 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
     spellCorrection.setPendingWordsInput,
     dataState.phrases,
     dataState.setPhrases,
-    dataState.loadPhrases
+    dataState.loadPhrases,
+    () => setIsTrialModalOpen(true)
   );
 
   return (
@@ -155,6 +160,15 @@ const MyWords = ({ user, onNavigate, updateUser }: MyWordsProps) => {
         isOpen={wordActions.isPhraseWarningOpen}
         onMoveToPhrasesSection={wordActions.handleMovePhraseToSection}
         onCancel={wordActions.handleCancelPhraseWarning}
+      />
+
+      <TrialOfferModal 
+        isOpen={isTrialModalOpen}
+        onClose={() => setIsTrialModalOpen(false)}
+        onTrialActivated={() => {
+          dataState.loadWords();
+          updateUser({});
+        }}
       />
     </div>
   );

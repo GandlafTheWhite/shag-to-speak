@@ -8,6 +8,7 @@ import { Exercise, ExerciseCategory, apiClient } from '@/utils/api';
 import DifficultySelector from '@/components/exercises/DifficultySelector';
 import CategoryPicker from '@/components/exercises/CategoryPicker';
 import ExerciseSession from '@/components/exercises/ExerciseSession';
+import TrialOfferModal from './TrialOfferModal';
 
 interface LearnWordsProps {
   user: User;
@@ -24,6 +25,7 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
   const [showDifficultyModal, setShowDifficultyModal] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [isLoadingExercises, setIsLoadingExercises] = useState(false);
+  const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const { toast } = useToast();
 
   const difficultyLabels = {
@@ -81,7 +83,13 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
     try {
       const data = await apiClient.getExercises(category, difficulty);
       setExercises(data.exercises);
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.limit_exceeded && error?.can_activate_trial) {
+        setIsLoadingExercises(false);
+        setIsTrialModalOpen(true);
+        return;
+      }
+      
       toast({
         title: 'Ошибка',
         description: error instanceof Error ? error.message : 'Не удалось загрузить упражнения',
@@ -318,6 +326,15 @@ const LearnWords = ({ user, onNavigate, updateUser }: LearnWordsProps) => {
         currentDifficulty={difficulty}
         onSelect={handleDifficultyChange}
         onClose={() => setShowDifficultyModal(false)}
+      />
+
+      <TrialOfferModal 
+        isOpen={isTrialModalOpen}
+        onClose={() => setIsTrialModalOpen(false)}
+        onTrialActivated={() => {
+          updateUser({});
+          setCurrentView('menu');
+        }}
       />
     </div>
   );
