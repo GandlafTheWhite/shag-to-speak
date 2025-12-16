@@ -92,24 +92,18 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user = cursor.fetchone()
             user_id = user['id']
             
-            trial_end = datetime.now() + timedelta(days=7)
-            
-            cursor.execute(
-                """UPDATE t_p7147437_shag_to_speak.users 
-                   SET subscription_tier = 'trial',
-                       trial_end_date = %s,
-                       is_trial_used = TRUE
-                   WHERE id = %s""",
-                (trial_end, user_id)
-            )
+            trial_start = datetime.now()
+            trial_end = trial_start + timedelta(days=7)
             
             period_start = datetime(datetime.now().year, datetime.now().month, 1).date()
             period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
             
             cursor.execute(
-                """INSERT INTO subscription_usage (user_id, period_start, period_end)
-                   VALUES (%s, %s, %s)""",
-                (user_id, period_start, period_end)
+                """INSERT INTO t_p7147437_shag_to_speak.subscription_usage 
+                   (user_id, current_tier, subscription_status, subscription_start, subscription_end, period_start, period_end,
+                    words_added, word_sets_added, exercises_completed, status_changes)
+                   VALUES (%s, 'trial', 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
+                (user_id, trial_start, trial_end, period_start, period_end)
             )
             
             conn.commit()
@@ -134,7 +128,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'status': user['status'],
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
-                        'exercises_remaining': 3,
+                        'exercises_remaining': 20,
                         'daily_exercises_count': 0,
                         'theme': user.get('theme', 'light'),
                         'onboarding_completed': user.get('onboarding_completed', False)
@@ -142,6 +136,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'token': token,
                     'subscription': {
                         'tier': 'trial',
+                        'status': 'active',
                         'trial_end_date': trial_end.isoformat(),
                         'message': '🎉 Вам предоставлен 7-дневный пробный период по тарифу Basic!'
                     }

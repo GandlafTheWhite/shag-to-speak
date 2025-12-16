@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '@/components/ui/icon';
+import { Button } from '@/components/ui/button';
 
 interface SubscriptionLimits {
   words_added: { used: number; limit: number; remaining: number };
@@ -18,45 +20,82 @@ interface SubscriptionData {
   available_plans: Array<{ tier: string; price: number }>;
 }
 
+const PAYMENT_URL = 'https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f34273b0ef7';
+
 export default function SubscriptionPage() {
+  const navigate = useNavigate();
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSubscription();
   }, []);
 
   const fetchSubscription = async () => {
+    const userId = localStorage.getItem('user_id');
+    
+    if (!userId) {
+      setError('Не найден ID пользователя. Пожалуйста, войдите в систему.');
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await fetch('https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f34273b0ef7?action=status', {
-        headers: { 'X-User-Id': localStorage.getItem('user_id') || '' }
+      const response = await fetch(`${PAYMENT_URL}?action=status`, {
+        headers: { 'X-User-Id': userId }
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
       const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       setSubscription(data);
-    } catch (error) {
-      console.error('Failed to fetch subscription:', error);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to fetch subscription:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSubscribe = async (tier: string, price: number) => {
+    const userId = localStorage.getItem('user_id');
+    
+    if (!userId) {
+      alert('Необходимо войти в систему');
+      return;
+    }
+    
     try {
-      const response = await fetch('https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f34273b0ef7?action=create', {
+      const response = await fetch(`${PAYMENT_URL}?action=create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': localStorage.getItem('user_id') || ''
+          'X-User-Id': userId
         },
         body: JSON.stringify({ tier })
       });
       
       const data = await response.json();
       
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
       alert(`⚠️ Заглушка оплаты\n\nТариф: ${tier}\nСумма: ${price}₽\nТранзакция: ${data.transaction_id}\n\n${data.message}`);
-    } catch (error) {
-      console.error('Payment creation failed:', error);
-      alert('Ошибка создания платежа. Попробуйте позже.');
+      
+      await fetchSubscription();
+    } catch (err) {
+      console.error('Payment creation failed:', err);
+      alert(`Ошибка: ${err instanceof Error ? err.message : 'Попробуйте позже'}`);
     }
   };
 
@@ -71,12 +110,23 @@ export default function SubscriptionPage() {
     );
   }
 
-  if (!subscription) {
+  if (error || !subscription) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center text-red-500">
-          <Icon name="AlertCircle" size={48} className="mx-auto mb-4" />
-          <p>Ошибка загрузки данных подписки</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-white to-orange-50 p-4">
+        <div className="text-center max-w-md">
+          <Icon name="AlertCircle" size={64} className="mx-auto mb-4 text-red-500" />
+          <h2 className="text-2xl font-bold mb-2 text-gray-800">Ошибка загрузки</h2>
+          <p className="text-gray-600 mb-6">{error || 'Не удалось загрузить данные подписки'}</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={fetchSubscription} variant="default">
+              <Icon name="RefreshCw" size={18} className="mr-2" />
+              Попробовать снова
+            </Button>
+            <Button onClick={() => navigate('/')} variant="outline">
+              <Icon name="Home" size={18} className="mr-2" />
+              На главную
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -132,6 +182,12 @@ export default function SubscriptionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
       <div className="max-w-6xl mx-auto">
+        <div className="mb-6">
+          <Button onClick={() => navigate('/')} variant="outline" size="lg">
+            <Icon name="ArrowLeft" size={20} className="mr-2" />
+            На главную
+          </Button>
+        </div>
         {subscription.is_trial && subscription.status === 'active' && (
           <div className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white p-6 rounded-2xl mb-8 shadow-lg">
             <div className="flex items-center justify-between">

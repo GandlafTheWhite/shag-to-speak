@@ -119,39 +119,21 @@ const Settings = ({ user, onNavigate, updateUser }: SettingsProps) => {
           <CardHeader>
             <CardTitle className="font-display">Подписка</CardTitle>
             <CardDescription>
-              Текущий статус: <strong>{user.status === 'free' ? 'Бесплатный' : 'Premium'}</strong>
+              Управление тарифами и лимитами
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {user.status === 'free' ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Обновите подписку до Premium для получения неограниченного доступа ко всем функциям
-                </p>
-                <div className="p-4 bg-accent/50 rounded-lg space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Icon name="Check" size={16} className="text-green-500" />
-                    <span className="text-sm">Безлимитное количество слов</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="Check" size={16} className="text-green-500" />
-                    <span className="text-sm">Неограниченные упражнения</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Icon name="Check" size={16} className="text-green-500" />
-                    <span className="text-sm">Приоритетная поддержка</span>
-                  </div>
-                </div>
-                <Button className="w-full" size="lg">
-                  <Icon name="Crown" size={20} className="mr-2" />
-                  Оформить Premium за 199 ₽/мес
-                </Button>
-              </div>
-            ) : (
+            <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                У вас активна Premium подписка. Спасибо за поддержку! ⭐
+                Здесь вы можете просмотреть текущую подписку, выбрать подходящий тариф и управлять лимитами использования.
               </p>
-            )}
+              <Link to="/subscription">
+                <Button className="w-full" size="lg" variant="default">
+                  <Icon name="Crown" size={20} className="mr-2" />
+                  Управление подпиской
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
 

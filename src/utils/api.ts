@@ -10,7 +10,8 @@ const API_URLS = {
   exerciseCategories: 'https://functions.poehali.dev/2cb6dda2-5dee-4cc0-afe0-67993e14943d',
   settings: 'https://functions.poehali.dev/988818e5-d5bb-4ef3-8d05-bd6be60b40a0',
   enrichWords: 'https://functions.poehali.dev/5c93fe2a-0fff-4db2-9d06-24cd6af4f983',
-  sentences: 'https://functions.poehali.dev/e971fd37-f9fe-411b-a599-470f989d69f0'
+  sentences: 'https://functions.poehali.dev/e971fd37-f9fe-411b-a599-470f989d69f0',
+  payment: 'https://functions.poehali.dev/2dff5495-d644-4ffa-ac37-8f34273b0ef7'
 };
 
 export interface ApiError {

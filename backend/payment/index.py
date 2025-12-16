@@ -4,85 +4,20 @@
 
 import json
 import os
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 from datetime import datetime, timedelta
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 
-def check_limit(cursor, user_id: int, limit_type: str) -> Tuple[bool, str]:
-    """Проверяет лимит и возвращает (success, error_message)"""
-    cursor.execute(
-        """SELECT subscription_tier, subscription_end_date, trial_end_date 
-           FROM users WHERE id = %s""",
-        (user_id,)
-    )
-    user = cursor.fetchone()
-    
-    if not user:
-        return False, 'User not found'
-    
-    tier = user['subscription_tier']
-    now = datetime.now()
-    
-    if tier == 'trial':
-        if not user['trial_end_date'] or now > user['trial_end_date']:
-            return False, '⚠️ Пробный период истёк. Оформите подписку для продолжения.'
-    elif not user['subscription_end_date'] or now > user['subscription_end_date']:
-        return False, '⚠️ Подписка истекла. Продлите доступ для продолжения.'
-    
-    cursor.execute(
-        f"SELECT {limit_type}_limit FROM subscription_plans WHERE tier = %s",
-        (tier if tier != 'trial' else 'basic',)
-    )
-    plan = cursor.fetchone()
-    limit = plan[f'{limit_type}_limit']
-    
-    if limit == -1:
-        return True, ''
-    
-    period_start = datetime(now.year, now.month, 1).date()
-    cursor.execute(
-        f"""SELECT {limit_type} FROM subscription_usage 
-           WHERE user_id = %s AND period_start = %s""",
-        (user_id, period_start)
-    )
-    usage = cursor.fetchone()
-    current = usage[limit_type] if usage else 0
-    
-    if current >= limit:
-        messages = {
-            'words_added': 'Достигнут лимит добавления слов',
-            'word_sets_added': 'Достигнут лимит добавления наборов',
-            'exercises_completed': 'Достигнут лимит упражнений',
-            'status_changes': 'Достигнут лимит изменений статуса'
-        }
-        return False, f"⚠️ {messages[limit_type]}. Обновите подписку!"
-    
-    return True, ''
-
-
-def increment_usage(cursor, conn, user_id: int, limit_type: str):
-    """Увеличить счётчик использования"""
-    now = datetime.now()
-    period_start = datetime(now.year, now.month, 1).date()
-    period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-    
-    cursor.execute(
-        """INSERT INTO subscription_usage (user_id, period_start, period_end)
-           VALUES (%s, %s, %s)
-           ON CONFLICT (user_id, period_start) DO NOTHING""",
-        (user_id, period_start, period_end)
-    )
-    
-    cursor.execute(
-        f"""UPDATE subscription_usage 
-           SET {limit_type} = {limit_type} + 1
-           WHERE user_id = %s AND period_start = %s""",
-        (user_id, period_start)
-    )
-    conn.commit()
+def error_response(status: int, message: str) -> Dict[str, Any]:
+    return {
+        'statusCode': status,
+        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+        'body': json.dumps({'error': message}),
+        'isBase64Encoded': False
+    }
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -118,48 +53,44 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_id = int(user_id_str)
             
             cursor.execute(
-                """SELECT subscription_tier, subscription_end_date, trial_end_date, is_trial_used
-                   FROM users WHERE id = %s""",
+                """SELECT su.current_tier, su.subscription_status, su.subscription_start, su.subscription_end,
+                          su.words_added, su.word_sets_added, su.exercises_completed, su.status_changes
+                   FROM t_p7147437_shag_to_speak.subscription_usage su
+                   WHERE su.user_id = %s
+                   ORDER BY su.subscription_end DESC NULLS LAST
+                   LIMIT 1""",
                 (user_id,)
             )
-            user = cursor.fetchone()
+            subscription = cursor.fetchone()
             
-            if not user:
-                return error_response(404, 'User not found')
+            if not subscription:
+                return error_response(404, 'Subscription not found')
             
             now = datetime.now()
-            tier = user['subscription_tier']
+            tier = subscription['current_tier']
+            status = subscription['subscription_status']
+            sub_end = subscription['subscription_end']
+            
             is_trial = tier == 'trial'
-            is_active = False
+            is_active = status == 'active' and sub_end and now < sub_end
             trial_days_left = 0
             
-            if is_trial and user['trial_end_date']:
-                trial_end = user['trial_end_date']
-                is_active = now < trial_end
-                trial_days_left = max(0, (trial_end - now).days)
-            elif user['subscription_end_date']:
-                is_active = now < user['subscription_end_date']
+            if is_trial and sub_end:
+                trial_days_left = max(0, (sub_end - now).days)
             
             cursor.execute(
                 """SELECT words_limit, word_sets_limit, exercises_limit, status_changes_limit
-                   FROM subscription_plans WHERE tier = %s""",
+                   FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s""",
                 (tier if tier != 'trial' else 'basic',)
             )
             limits = cursor.fetchone()
             
-            period_start = datetime(now.year, now.month, 1).date()
-            cursor.execute(
-                """SELECT words_added, word_sets_added, exercises_completed, status_changes
-                   FROM subscription_usage 
-                   WHERE user_id = %s AND period_start = %s""",
-                (user_id, period_start)
-            )
-            usage = cursor.fetchone() or {
-                'words_added': 0, 'word_sets_added': 0,
-                'exercises_completed': 0, 'status_changes': 0
-            }
+            if not limits:
+                limits = {'words_limit': 60, 'word_sets_limit': 4, 'exercises_limit': 20, 'status_changes_limit': 10}
             
-            cursor.execute("SELECT tier, price_rub FROM subscription_plans WHERE is_active = TRUE ORDER BY price_rub")
+            cursor.execute(
+                "SELECT tier, price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE is_active = TRUE ORDER BY price_rub"
+            )
             plans = cursor.fetchall()
             
             return {
@@ -170,27 +101,27 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'status': 'active' if is_active else 'expired',
                     'is_trial': is_trial,
                     'trial_days_left': trial_days_left,
-                    'subscription_end_date': user['subscription_end_date'].isoformat() if user['subscription_end_date'] else None,
+                    'subscription_end_date': sub_end.isoformat() if sub_end else None,
                     'limits': {
                         'words_added': {
-                            'used': usage['words_added'],
+                            'used': subscription['words_added'],
                             'limit': limits['words_limit'],
-                            'remaining': limits['words_limit'] - usage['words_added'] if limits['words_limit'] > 0 else -1
+                            'remaining': limits['words_limit'] - subscription['words_added'] if limits['words_limit'] > 0 else -1
                         },
                         'word_sets_added': {
-                            'used': usage['word_sets_added'],
+                            'used': subscription['word_sets_added'],
                             'limit': limits['word_sets_limit'],
-                            'remaining': limits['word_sets_limit'] - usage['word_sets_added'] if limits['word_sets_limit'] > 0 else -1
+                            'remaining': limits['word_sets_limit'] - subscription['word_sets_added'] if limits['word_sets_limit'] > 0 else -1
                         },
                         'exercises_completed': {
-                            'used': usage['exercises_completed'],
+                            'used': subscription['exercises_completed'],
                             'limit': limits['exercises_limit'],
-                            'remaining': limits['exercises_limit'] - usage['exercises_completed'] if limits['exercises_limit'] > 0 else -1
+                            'remaining': limits['exercises_limit'] - subscription['exercises_completed'] if limits['exercises_limit'] > 0 else -1
                         },
                         'status_changes': {
-                            'used': usage['status_changes'],
+                            'used': subscription['status_changes'],
                             'limit': limits['status_changes_limit'],
-                            'remaining': limits['status_changes_limit'] - usage['status_changes'] if limits['status_changes_limit'] > 0 else -1
+                            'remaining': limits['status_changes_limit'] - subscription['status_changes'] if limits['status_changes_limit'] > 0 else -1
                         }
                     },
                     'available_plans': [{'tier': p['tier'], 'price': p['price_rub']} for p in plans]
@@ -206,7 +137,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             tier = body_data.get('tier', 'basic')
             
-            cursor.execute("SELECT price_rub FROM subscription_plans WHERE tier = %s", (tier,))
+            cursor.execute(
+                "SELECT price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s",
+                (tier,)
+            )
             plan = cursor.fetchone()
             
             if not plan:
@@ -216,38 +150,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             transaction_id = str(uuid.uuid4())
             
             cursor.execute(
-                """INSERT INTO payment_transactions (user_id, transaction_id, tier, amount, status)
+                """INSERT INTO t_p7147437_shag_to_speak.payment_transactions 
+                   (user_id, transaction_id, tier, amount, status)
                    VALUES (%s, %s, %s, %s, 'PENDING')
                    RETURNING id""",
                 (user_id, transaction_id, tier, amount)
             )
             conn.commit()
             
-            mock_redirect_url = f"https://mock-payment.example.com/pay?transaction={transaction_id}"
-            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({
                     'transaction_id': transaction_id,
-                    'redirect_url': mock_redirect_url,
                     'amount': amount,
                     'tier': tier,
-                    'message': '⚠️ Это заглушка оплаты. Реальная интеграция с Platega будет добавлена позже.'
+                    'payment_url': f'https://payment.stub/{transaction_id}',
+                    'message': '⚠️ Заглушка платежа. В продакшене здесь будет редирект на Platega.'
                 }),
                 'isBase64Encoded': False
             }
         
-        elif method == 'POST' and action == 'callback':
+        elif method == 'POST' and action == 'webhook':
             body_data = json.loads(event.get('body', '{}'))
-            transaction_id = body_data.get('id')
-            status = body_data.get('status')
+            transaction_id = body_data.get('transaction_id')
+            payment_status = body_data.get('status', 'CONFIRMED')
             
             if not transaction_id:
                 return error_response(400, 'Transaction ID required')
             
             cursor.execute(
-                """SELECT user_id, tier FROM payment_transactions 
+                """SELECT user_id, tier, amount FROM t_p7147437_shag_to_speak.payment_transactions 
                    WHERE transaction_id = %s""",
                 (transaction_id,)
             )
@@ -256,73 +189,84 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not transaction:
                 return error_response(404, 'Transaction not found')
             
-            user_id = transaction['user_id']
-            tier = transaction['tier']
-            
-            if status == 'CONFIRMED':
+            if payment_status == 'CONFIRMED':
+                user_id = transaction['user_id']
+                tier = transaction['tier']
+                
                 now = datetime.now()
-                end_date = now + timedelta(days=30)
+                subscription_start = now
+                subscription_end = now + timedelta(days=30)
+                period_start = datetime(now.year, now.month, 1).date()
+                period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
                 
                 cursor.execute(
-                    """UPDATE users 
-                       SET subscription_tier = %s, 
-                           subscription_start_date = %s,
-                           subscription_end_date = %s
+                    """UPDATE t_p7147437_shag_to_speak.subscription_usage
+                       SET current_tier = %s,
+                           subscription_status = 'active',
+                           subscription_start = %s,
+                           subscription_end = %s,
+                           words_added = 0,
+                           word_sets_added = 0,
+                           exercises_completed = 0,
+                           status_changes = 0
+                       WHERE user_id = %s AND period_start = %s""",
+                    (tier, subscription_start, subscription_end, user_id, period_start)
+                )
+                
+                if cursor.rowcount == 0:
+                    cursor.execute(
+                        """INSERT INTO t_p7147437_shag_to_speak.subscription_usage
+                           (user_id, current_tier, subscription_status, subscription_start, subscription_end,
+                            period_start, period_end, words_added, word_sets_added, exercises_completed, status_changes)
+                           VALUES (%s, %s, 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
+                        (user_id, tier, subscription_start, subscription_end, period_start, period_end)
+                    )
+                
+                cursor.execute(
+                    """UPDATE t_p7147437_shag_to_speak.users
+                       SET status = %s
                        WHERE id = %s""",
-                    (tier, now, end_date, user_id)
+                    ('premium' if tier in ('basic', 'pro', 'unlimited') else 'free', user_id)
                 )
                 
                 cursor.execute(
-                    """UPDATE payment_transactions 
+                    """UPDATE t_p7147437_shag_to_speak.payment_transactions
                        SET status = 'CONFIRMED', confirmed_at = %s
                        WHERE transaction_id = %s""",
                     (now, transaction_id)
                 )
                 
-                period_start = datetime(now.year, now.month, 1).date()
-                period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-                
-                cursor.execute(
-                    """INSERT INTO subscription_usage (user_id, period_start, period_end)
-                       VALUES (%s, %s, %s)
-                       ON CONFLICT (user_id, period_start) DO NOTHING""",
-                    (user_id, period_start, period_end)
-                )
-                
                 conn.commit()
-            
-            elif status == 'CANCELED':
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Subscription activated', 'tier': tier}),
+                    'isBase64Encoded': False
+                }
+            else:
                 cursor.execute(
-                    """UPDATE payment_transactions 
-                       SET status = 'CANCELED'
+                    """UPDATE t_p7147437_shag_to_speak.payment_transactions
+                       SET status = 'FAILED'
                        WHERE transaction_id = %s""",
                     (transaction_id,)
                 )
                 conn.commit()
-            
-            return {
-                'statusCode': 200,
-                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'success': True}),
-                'isBase64Encoded': False
-            }
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({'message': 'Payment failed'}),
+                    'isBase64Encoded': False
+                }
         
         else:
-            return error_response(400, 'Invalid action')
+            return error_response(400, f'Unknown action: {action}')
     
     except Exception as e:
-        print(f'Error: {str(e)}')
-        return error_response(500, f'Server error: {str(e)}')
+        conn.rollback()
+        return error_response(500, str(e))
     
     finally:
         cursor.close()
         conn.close()
-
-
-def error_response(status_code: int, message: str) -> Dict[str, Any]:
-    return {
-        'statusCode': status_code,
-        'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-        'body': json.dumps({'error': message}),
-        'isBase64Encoded': False
-    }
