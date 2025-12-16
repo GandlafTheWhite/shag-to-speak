@@ -289,8 +289,8 @@ export default function SubscriptionPage() {
             </div>
 
             <div className="space-y-3 sm:space-y-4">
-              <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 flex items-center gap-2">
-                <Icon name="Activity" size={18} className="sm:w-5 sm:h-5" />
+              <h3 className="font-bold text-base sm:text-lg mb-2 sm:mb-3 flex items-center gap-2 text-gray-900">
+                <Icon name="Activity" size={18} className="text-blue-500 sm:w-5 sm:h-5" />
                 Использование лимитов:
               </h3>
               
@@ -307,11 +307,11 @@ export default function SubscriptionPage() {
                 return (
                   <div key={key} className="space-y-1.5 sm:space-y-2">
                     <div className="flex justify-between text-xs sm:text-sm">
-                      <span className="flex items-center gap-1.5 sm:gap-2">
-                        <Icon name={icon as any} size={14} className="sm:w-4 sm:h-4" />
+                      <span className="flex items-center gap-1.5 sm:gap-2 text-gray-700">
+                        <Icon name={icon as any} size={14} className="text-blue-500 sm:w-4 sm:h-4" />
                         <span className="truncate">{label}</span>
                       </span>
-                      <span className="font-semibold whitespace-nowrap ml-2">
+                      <span className="font-semibold whitespace-nowrap ml-2 text-gray-900">
                         {limit.used} / {isUnlimited ? '∞' : limit.limit}
                       </span>
                     </div>
@@ -360,9 +360,9 @@ export default function SubscriptionPage() {
                     <Icon name="Zap" size={24} className="text-white sm:w-8 sm:h-8" />
                   </div>
                   
-                  <h3 className="text-xl sm:text-2xl font-bold mb-2">{plan.name}</h3>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 text-gray-900">{plan.name}</h3>
                   <div className="mb-4 sm:mb-6">
-                    <span className="text-3xl sm:text-4xl font-bold">{plan.price} ₽</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-gray-900">{plan.price} ₽</span>
                     <span className="text-sm sm:text-base text-gray-600">/мес</span>
                   </div>
                   
