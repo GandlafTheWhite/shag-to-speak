@@ -1,13 +1,24 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
+import { useState } from 'react';
 
 interface HelpProps {
   onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help') => void;
 }
 
 const Help = ({ onNavigate }: HelpProps) => {
+  const [emailCopied, setEmailCopied] = useState(false);
+  const email = 'ilianikishin@ya.ru';
+
+  const copyEmail = () => {
+    navigator.clipboard.writeText(email);
+    setEmailCopied(true);
+    setTimeout(() => setEmailCopied(false), 2000);
+  };
+
   const faqs = [
     {
       question: 'Как добавить новые слова?',
@@ -90,15 +101,54 @@ const Help = ({ onNavigate }: HelpProps) => {
                   По всем вопросам вы также можете написать на почту
                 </p>
               </div>
-              <Button 
-                variant="outline"
-                size="lg"
-                className="w-full md:w-auto"
-                onClick={() => window.open('mailto:ilianikishin@ya.ru', '_blank')}
-              >
-                <Icon name="Mail" size={20} className="mr-2" />
-                ilianikishin@ya.ru
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    className="w-full md:w-auto"
+                  >
+                    <Icon name="Mail" size={20} className="mr-2" />
+                    Написать на почту
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="font-display">Связаться по email</DialogTitle>
+                    <DialogDescription>
+                      Напишите нам на почту или скопируйте адрес
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <Button 
+                      className="w-full shadow-md hover:shadow-lg transition-all"
+                      size="lg"
+                      onClick={() => window.open(`mailto:${email}`, '_blank')}
+                    >
+                      <Icon name="Mail" size={20} className="mr-2" />
+                      Открыть почтовый клиент
+                    </Button>
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground text-center">или скопируйте адрес</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 px-4 py-2 bg-muted rounded-md text-sm font-mono">
+                          {email}
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="icon"
+                          onClick={copyEmail}
+                        >
+                          <Icon name={emailCopied ? "Check" : "Copy"} size={18} />
+                        </Button>
+                      </div>
+                      {emailCopied && (
+                        <p className="text-xs text-green-600 text-center">Адрес скопирован!</p>
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
