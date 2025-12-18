@@ -60,7 +60,7 @@ const Help = ({ onNavigate }: HelpProps) => {
       <main className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
         <Card className="mb-8 bg-gradient-to-br from-primary/10 to-accent border-primary/30 shadow-lg">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                   <Icon name="MessageCircle" size={32} className="text-primary" />
@@ -81,6 +81,23 @@ const Help = ({ onNavigate }: HelpProps) => {
               >
                 <Icon name="Send" size={20} className="mr-2" />
                 Открыть Telegram
+              </Button>
+            </div>
+            <div className="border-t pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Icon name="Mail" size={24} className="text-primary flex-shrink-0" />
+                <p className="text-sm text-muted-foreground">
+                  По всем вопросам вы также можете написать на почту
+                </p>
+              </div>
+              <Button 
+                variant="outline"
+                size="lg"
+                className="w-full md:w-auto"
+                onClick={() => window.open('mailto:ilianikishin@ya.ru', '_blank')}
+              >
+                <Icon name="Mail" size={20} className="mr-2" />
+                ilianikishin@ya.ru
               </Button>
             </div>
           </CardContent>
