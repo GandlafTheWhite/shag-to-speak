@@ -248,7 +248,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             platega_data = platega_response.json()
             transaction_id = platega_data.get('transactionId')
             redirect_url = platega_data.get('redirect')
-            payment_method = platega_data.get('paymentMethod')
             
             if not transaction_id or not redirect_url:
                 return error_response(500, 'Invalid Platega response')
@@ -258,7 +257,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                    (user_id, transaction_id, tier, amount, status, payment_method)
                    VALUES (%s, %s, %s, %s, 'PENDING', %s)
                    RETURNING id""",
-                (user_id, transaction_id, tier, amount, payment_method)
+                (user_id, transaction_id, tier, amount, 2)
             )
             conn.commit()
             
