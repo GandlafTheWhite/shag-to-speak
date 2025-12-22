@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import uuid
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import requests
 
 
 def error_response(status: int, message: str) -> Dict[str, Any]:
@@ -29,7 +30,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-MerchantId, X-Secret',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -217,14 +218,47 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return error_response(400, 'Invalid tier')
             
             amount = plan['price_rub']
-            transaction_id = str(uuid.uuid4())
+            
+            platega_payload = {
+                'paymentMethod': 10,
+                'paymentDetails': {
+                    'amount': float(amount),
+                    'currency': 'RUB'
+                },
+                'description': f'Подписка ShagToSpeak - тариф {tier}',
+                'return': 'https://airnold.poehali.dev/?payment=success',
+                'failedUrl': 'https://airnold.poehali.dev/?payment=failed',
+                'payload': json.dumps({'user_id': user_id, 'tier': tier})
+            }
+            
+            platega_response = requests.post(
+                'https://app.platega.io/transaction/process',
+                headers={
+                    'Content-Type': 'application/json',
+                    'X-MerchantId': os.environ['PLATEGA_MERCHANT_ID'],
+                    'X-Secret': os.environ['PLATEGA_SECRET']
+                },
+                json=platega_payload,
+                timeout=10
+            )
+            
+            if platega_response.status_code != 200:
+                return error_response(500, f'Platega API error: {platega_response.text}')
+            
+            platega_data = platega_response.json()
+            transaction_id = platega_data.get('transactionId')
+            redirect_url = platega_data.get('redirect')
+            payment_method = platega_data.get('paymentMethod')
+            
+            if not transaction_id or not redirect_url:
+                return error_response(500, 'Invalid Platega response')
             
             cursor.execute(
                 """INSERT INTO t_p7147437_shag_to_speak.payment_transactions 
-                   (user_id, transaction_id, tier, amount, status)
-                   VALUES (%s, %s, %s, %s, 'PENDING')
+                   (user_id, transaction_id, tier, amount, status, payment_method)
+                   VALUES (%s, %s, %s, %s, 'PENDING', %s)
                    RETURNING id""",
-                (user_id, transaction_id, tier, amount)
+                (user_id, transaction_id, tier, amount, payment_method)
             )
             conn.commit()
             
@@ -232,19 +266,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                 'body': json.dumps({
+                    'success': True,
                     'transaction_id': transaction_id,
+                    'redirect_url': redirect_url,
                     'amount': amount,
-                    'tier': tier,
-                    'payment_url': f'https://payment.stub/{transaction_id}',
-                    'message': '⚠️ Заглушка платежа. В продакшене здесь будет редирект на Platega.'
+                    'tier': tier
                 }),
                 'isBase64Encoded': False
             }
         
-        elif method == 'POST' and action == 'webhook':
+        elif method == 'POST' and action == 'callback':
+            merchant_id = headers.get('X-MerchantId') or headers.get('x-merchantid')
+            secret = headers.get('X-Secret') or headers.get('x-secret')
+            
+            if merchant_id != os.environ['PLATEGA_MERCHANT_ID'] or secret != os.environ['PLATEGA_SECRET']:
+                return error_response(401, 'Invalid credentials')
+            
             body_data = json.loads(event.get('body', '{}'))
-            transaction_id = body_data.get('transaction_id')
-            payment_status = body_data.get('status', 'CONFIRMED')
+            transaction_id = body_data.get('id')
+            payment_status = body_data.get('status')
             
             if not transaction_id:
                 return error_response(400, 'Transaction ID required')
@@ -317,7 +357,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             else:
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
-                       SET status = 'FAILED'
+                       SET status = 'CANCELED'
                        WHERE transaction_id = %s""",
                     (transaction_id,)
                 )
@@ -326,7 +366,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'message': 'Payment failed'}),
+                    'body': json.dumps({'message': 'Payment canceled'}),
                     'isBase64Encoded': False
                 }
         

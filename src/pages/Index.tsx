@@ -42,6 +42,24 @@ const Index = () => {
   const { setTheme } = useTheme();
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    
+    if (paymentStatus === 'success') {
+      toast({
+        title: '✅ Оплата успешна!',
+        description: 'Ваша подписка активирована. Обновите страницу, чтобы увидеть изменения.',
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'failed') {
+      toast({
+        title: '❌ Оплата не прошла',
+        description: 'Попробуйте еще раз или обратитесь в поддержку.',
+        variant: 'destructive'
+      });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
     const storedUser = localStorage.getItem('shagtospeak_user');
     const storedToken = localStorage.getItem('auth_token');
     

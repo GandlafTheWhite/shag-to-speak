@@ -99,9 +99,11 @@ export default function SubscriptionPage() {
         throw new Error(data.error);
       }
       
-      alert(`⚠️ Заглушка оплаты\n\nТариф: ${tier}\nСумма: ${price}₽\nТранзакция: ${data.transaction_id}\n\n${data.message}`);
-      
-      await fetchSubscription();
+      if (data.success && data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        throw new Error('Не получена ссылка для оплаты');
+      }
     } catch (err) {
       console.error('Payment creation failed:', err);
       alert(`Ошибка: ${err instanceof Error ? err.message : 'Попробуйте позже'}`);
