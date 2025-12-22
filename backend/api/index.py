@@ -6,12 +6,15 @@ Returns: HTTP response с statusCode, headers, body
 
 import json
 import os
+import sys
+sys.path.append('/var/task')
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any, List
 import hashlib
 import requests
 from datetime import datetime, date
+from subscription_helper import get_user_subscription, check_limit
 
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
@@ -144,7 +147,7 @@ def login_user(event: Dict[str, Any]) -> Dict[str, Any]:
     password_hash = hash_password(password)
     
     cur.execute(
-        "SELECT id, name, status FROM users WHERE email = %s AND password_hash = %s",
+        "SELECT id, name FROM t_p7147437_shag_to_speak.users WHERE email = %s AND password_hash = %s",
         (email, password_hash)
     )
     user = cur.fetchone()
@@ -174,13 +177,15 @@ def get_user_info(event: Dict[str, Any]) -> Dict[str, Any]:
     cur = conn.cursor()
     
     cur.execute(
-        "SELECT id, email, name, status, preferences, daily_exercises_count, last_exercise_date FROM users WHERE id = %s",
+        "SELECT id, email, name, preferences, daily_exercises_count, last_exercise_date FROM t_p7147437_shag_to_speak.users WHERE id = %s",
         (user_id,)
     )
     user = cur.fetchone()
     
-    cur.execute("SELECT COUNT(*) as count FROM words WHERE user_id = %s", (user_id,))
+    cur.execute("SELECT COUNT(*) as count FROM t_p7147437_shag_to_speak.words WHERE user_id = %s", (user_id,))
     word_count = cur.fetchone()['count']
+    
+    subscription = get_user_subscription(cur, int(user_id))
     
     cur.close()
     conn.close()
@@ -194,7 +199,9 @@ def get_user_info(event: Dict[str, Any]) -> Dict[str, Any]:
     if last_exercise and str(today) != last_exercise:
         user_data['daily_exercises_count'] = 0
     
-    exercises_remaining = 3 - user_data['daily_exercises_count'] if user_data['status'] == 'free' else 999
+    exercises_limit = subscription['limits']['exercises_limit']
+    exercises_remaining = exercises_limit - user_data['daily_exercises_count'] if exercises_limit > 0 else 999
+    user_data['subscription'] = subscription
     
     return {
         'statusCode': 200,
@@ -212,19 +219,15 @@ def add_word(event: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    cur.execute("SELECT COUNT(*) as count FROM words WHERE user_id = %s", (user_id,))
-    word_count = cur.fetchone()['count']
+    limit_check = check_limit(cur, int(user_id), 'words')
     
-    cur.execute("SELECT status FROM users WHERE id = %s", (user_id,))
-    user_status = cur.fetchone()['status']
-    
-    if user_status == 'free' and word_count >= 50:
+    if not limit_check['allowed']:
         cur.close()
         conn.close()
         return {
             'statusCode': 403,
             'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Word limit reached', 'limit': True}),
+            'body': json.dumps({'error': 'Word limit reached', 'limit': True, 'tier': limit_check['tier']}),
             'isBase64Encoded': False
         }
     

@@ -333,13 +333,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     )
                 
                 cursor.execute(
-                    """UPDATE t_p7147437_shag_to_speak.users
-                       SET status = %s
-                       WHERE id = %s""",
-                    ('premium' if tier in ('basic', 'pro', 'unlimited') else 'free', user_id)
-                )
-                
-                cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
                        SET status = 'CONFIRMED', confirmed_at = %s
                        WHERE transaction_id = %s""",
