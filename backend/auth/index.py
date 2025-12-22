@@ -84,9 +84,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """INSERT INTO t_p7147437_shag_to_speak.users 
-                   (email, password_hash, name, phone, status, preferences, daily_exercises_count, theme, onboarding_completed, is_trial_used)
-                   VALUES (%s, %s, %s, %s, 'free', %s, 0, 'light', FALSE, FALSE)
-                   RETURNING id, email, name, phone, status, preferences, theme, onboarding_completed""",
+                   (email, password_hash, name, phone, preferences, daily_exercises_count, theme, onboarding_completed, is_trial_used)
+                   VALUES (%s, %s, %s, %s, %s, 0, 'light', FALSE, FALSE)
+                   RETURNING id, email, name, phone, preferences, theme, onboarding_completed""",
                 (email, password_hash, name, phone, preferences)
             )
             user = cursor.fetchone()
@@ -122,7 +122,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'email': user['email'],
                         'name': user['name'],
                         'phone': user['phone'],
-                        'status': user['status'],
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
                         'exercises_remaining': 0,
@@ -155,7 +154,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             password_hash = hash_password(password)
             
             cursor.execute(
-                """SELECT id, email, name, phone, status, preferences, daily_exercises_count, last_exercise_date, 
+                """SELECT id, email, name, phone, preferences, daily_exercises_count, last_exercise_date, 
                           theme, onboarding_completed, profile_completed
                    FROM t_p7147437_shag_to_speak.users 
                    WHERE email = %s AND password_hash = %s""",
@@ -178,9 +177,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             word_count = cursor.fetchone()['word_count']
             
             daily_count = user['daily_exercises_count'] or 0
-            exercises_remaining = 3 if user['status'] == 'free' else 999
-            if user['status'] == 'free':
-                exercises_remaining = max(0, 3 - daily_count)
             
             token = create_token(user['id'], user['email'])
             
@@ -193,10 +189,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         'email': user['email'],
                         'name': user['name'],
                         'phone': user['phone'],
-                        'status': user['status'],
                         'preferences': user['preferences'] or [],
                         'word_count': word_count,
-                        'exercises_remaining': exercises_remaining,
+                        'exercises_remaining': 0,
                         'daily_exercises_count': daily_count,
                         'theme': user.get('theme', 'light'),
                         'onboarding_completed': user.get('onboarding_completed', False),

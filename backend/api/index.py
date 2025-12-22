@@ -6,15 +6,51 @@ Returns: HTTP response с statusCode, headers, body
 
 import json
 import os
-import sys
-sys.path.append('/var/task')
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from typing import Dict, Any, List
 import hashlib
 import requests
 from datetime import datetime, date
-from subscription_helper import get_user_subscription, check_limit
+
+def get_user_subscription(cursor: RealDictCursor, user_id: int) -> Dict[str, Any]:
+    cursor.execute(
+        """SELECT su.current_tier, su.subscription_status, su.subscription_end,
+                  sp.words_limit, sp.exercises_limit, sp.word_sets_limit, sp.status_changes_limit
+           FROM t_p7147437_shag_to_speak.subscription_usage su
+           LEFT JOIN t_p7147437_shag_to_speak.subscription_plans sp ON su.current_tier = sp.tier
+           WHERE su.user_id = %s
+           ORDER BY su.subscription_end DESC NULLS LAST
+           LIMIT 1""",
+        (user_id,)
+    )
+    sub = cursor.fetchone()
+    if not sub:
+        return {'tier': 'none', 'is_active': False, 'limits': {'words_limit': 0, 'exercises_limit': 0, 'word_sets_limit': 0, 'status_changes_limit': 0}, 'subscription_end': None}
+    now = datetime.now()
+    sub_end = sub['subscription_end']
+    is_active = sub['subscription_status'] == 'active' and sub_end is not None and now < sub_end
+    return {'tier': sub['current_tier'] or 'none', 'is_active': is_active, 'limits': {'words_limit': sub['words_limit'] or 0, 'exercises_limit': sub['exercises_limit'] or 0, 'word_sets_limit': sub['word_sets_limit'] or 0, 'status_changes_limit': sub['status_changes_limit'] or 0}, 'subscription_end': sub_end.isoformat() if sub_end else None}
+
+def check_limit(cursor: RealDictCursor, user_id: int, limit_type: str) -> Dict[str, Any]:
+    subscription = get_user_subscription(cursor, user_id)
+    if not subscription['is_active']:
+        return {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'tier': subscription['tier']}
+    limit_field_map = {'words': ('words_limit', 'words_added'), 'exercises': ('exercises_limit', 'exercises_completed'), 'word_sets': ('word_sets_limit', 'word_sets_added'), 'status_changes': ('status_changes_limit', 'status_changes')}
+    if limit_type not in limit_field_map:
+        raise ValueError(f"Unknown limit_type: {limit_type}")
+    limit_field, usage_field = limit_field_map[limit_type]
+    limit_value = subscription['limits'][limit_field]
+    cursor.execute(f"""SELECT {usage_field} FROM t_p7147437_shag_to_speak.subscription_usage WHERE user_id = %s ORDER BY subscription_end DESC NULLS LAST LIMIT 1""", (user_id,))
+    usage_row = cursor.fetchone()
+    used = usage_row[usage_field] if usage_row else 0
+    if limit_value == -1:
+        remaining = -1
+        allowed = True
+    else:
+        remaining = max(0, limit_value - used)
+        allowed = remaining > 0
+    return {'allowed': allowed, 'used': used, 'limit': limit_value, 'remaining': remaining, 'tier': subscription['tier']}
 
 def get_db_connection():
     dsn = os.environ.get('DATABASE_URL')
@@ -270,22 +306,15 @@ def add_words_batch(event: Dict[str, Any]) -> Dict[str, Any]:
     conn = get_db_connection()
     cur = conn.cursor()
     
-    cur.execute("SELECT COUNT(*) as count FROM words WHERE user_id = %s", (user_id,))
-    word_count = cur.fetchone()['count']
+    limit_check = check_limit(cur, int(user_id), 'words')
     
-    cur.execute("SELECT status FROM users WHERE id = %s", (user_id,))
-    user_status = cur.fetchone()['status']
-    
-    max_words = 50 if user_status == 'free' else 999999
-    available_slots = max_words - word_count
-    
-    if len(words_list) > available_slots:
+    if not limit_check['allowed'] or limit_check['remaining'] < len(words_list):
         cur.close()
         conn.close()
         return {
             'statusCode': 403,
             'headers': {'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json'},
-            'body': json.dumps({'error': 'Word limit reached', 'limit': True}),
+            'body': json.dumps({'error': 'Word limit reached', 'limit': True, 'tier': limit_check['tier']}),
             'isBase64Encoded': False
         }
     

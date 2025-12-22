@@ -12,89 +12,32 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import requests
 
-# Встроенные функции проверки лимитов
-def check_subscription_limit(cursor, user_id: int, limit_type: str):
-    """Проверяет лимит подписки. Returns: (success, error_message, can_activate_trial)"""
-    cursor.execute(
-        """SELECT su.current_tier, su.subscription_status, su.subscription_end,
-                  su.words_added, su.word_sets_added, su.exercises_completed, su.status_changes,
-                  u.is_trial_used
-           FROM t_p7147437_shag_to_speak.subscription_usage su
-           JOIN t_p7147437_shag_to_speak.users u ON u.id = su.user_id
-           WHERE su.user_id = %s
-           ORDER BY su.subscription_end DESC NULLS LAST
-           LIMIT 1""",
-        (user_id,)
-    )
-    subscription = cursor.fetchone()
-    
-    if not subscription:
-        return False, 'Subscription not found', False
-    
-    tier = subscription['current_tier']
-    status = subscription['subscription_status']
-    sub_end = subscription['subscription_end']
-    is_trial_used = subscription['is_trial_used']
-    now = datetime.now()
-    
-    if tier == 'none' or status == 'inactive':
-        return False, 'no_subscription', not is_trial_used
-    
-    if sub_end and now > sub_end:
-        return False, 'subscription_expired', not is_trial_used
-    
-    limit_column_map = {
-        'words_added': 'words_limit',
-        'word_sets_added': 'word_sets_limit',
-        'exercises_completed': 'exercises_limit',
-        'status_changes': 'status_changes_limit'
-    }
-    
-    column_name = limit_column_map.get(limit_type)
-    if not column_name:
-        return False, 'Invalid limit type', not is_trial_used
-    
-    cursor.execute(
-        f"""SELECT {column_name} FROM t_p7147437_shag_to_speak.subscription_plans 
-           WHERE tier = %s""",
-        (tier if tier != 'trial' else 'basic',)
-    )
-    plan = cursor.fetchone()
-    
-    if not plan:
-        return False, 'Plan not found', not is_trial_used
-    
-    limit = plan[column_name]
-    
-    if limit == -1:
-        return True, '', False
-    
-    current_usage = subscription[limit_type]
-    
-    if current_usage >= limit:
-        messages = {
-            'words_added': 'Достигнут лимит добавления слов',
-            'word_sets_added': 'Достигнут лимит добавления наборов',
-            'exercises_completed': 'Достигнут лимит упражнений',
-            'status_changes': 'Достигнут лимит изменений статуса'
-        }
-        return False, f"limit_exceeded:{messages[limit_type]}", not is_trial_used
-    
-    return True, '', False
+def get_user_subscription(cursor: RealDictCursor, user_id: int) -> Dict[str, Any]:
+    cursor.execute("""SELECT su.current_tier, su.subscription_status, su.subscription_end, sp.words_limit, sp.exercises_limit, sp.word_sets_limit, sp.status_changes_limit FROM t_p7147437_shag_to_speak.subscription_usage su LEFT JOIN t_p7147437_shag_to_speak.subscription_plans sp ON su.current_tier = sp.tier WHERE su.user_id = %s ORDER BY su.subscription_end DESC NULLS LAST LIMIT 1""", (user_id,))
+    sub = cursor.fetchone()
+    if not sub:
+        return {'tier': 'none', 'is_active': False, 'limits': {'words_limit': 0, 'exercises_limit': 0, 'word_sets_limit': 0, 'status_changes_limit': 0}, 'subscription_end': None}
+    now, sub_end = datetime.now(), sub['subscription_end']
+    is_active = sub['subscription_status'] == 'active' and sub_end and now < sub_end
+    return {'tier': sub['current_tier'] or 'none', 'is_active': is_active, 'limits': {'words_limit': sub['words_limit'] or 0, 'exercises_limit': sub['exercises_limit'] or 0, 'word_sets_limit': sub['word_sets_limit'] or 0, 'status_changes_limit': sub['status_changes_limit'] or 0}, 'subscription_end': sub_end.isoformat() if sub_end else None}
 
-
-def increment_usage(cursor, conn, user_id: int, limit_type: str):
-    """Увеличить счётчик использования"""
-    now = datetime.now()
-    period_start = datetime(now.year, now.month, 1).date()
-    
-    cursor.execute(
-        f"""UPDATE t_p7147437_shag_to_speak.subscription_usage 
-           SET {limit_type} = {limit_type} + 1
-           WHERE user_id = %s AND period_start = %s""",
-        (user_id, period_start)
-    )
-    conn.commit()
+def check_limit(cursor: RealDictCursor, user_id: int, limit_type: str) -> Dict[str, Any]:
+    subscription = get_user_subscription(cursor, user_id)
+    if not subscription['is_active']:
+        return {'allowed': False, 'used': 0, 'limit': 0, 'remaining': 0, 'tier': subscription['tier']}
+    limit_field_map = {'words': ('words_limit', 'words_added'), 'exercises': ('exercises_limit', 'exercises_completed'), 'word_sets': ('word_sets_limit', 'word_sets_added'), 'status_changes': ('status_changes_limit', 'status_changes')}
+    if limit_type not in limit_field_map:
+        raise ValueError(f"Unknown limit_type: {limit_type}")
+    limit_field, usage_field = limit_field_map[limit_type]
+    limit_value = subscription['limits'][limit_field]
+    cursor.execute(f"""SELECT {usage_field} FROM t_p7147437_shag_to_speak.subscription_usage WHERE user_id = %s ORDER BY subscription_end DESC NULLS LAST LIMIT 1""", (user_id,))
+    usage_row = cursor.fetchone()
+    used = usage_row[usage_field] if usage_row else 0
+    if limit_value == -1:
+        remaining, allowed = -1, True
+    else:
+        remaining, allowed = max(0, limit_value - used), (limit_value - used) > 0
+    return {'allowed': allowed, 'used': used, 'limit': limit_value, 'remaining': remaining, 'tier': subscription['tier']}
 
 CATEGORIES = [
     'people_family', 'appearance', 'character_personality', 'emotions_feelings',
@@ -434,15 +377,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            success, error_msg, can_activate_trial = check_subscription_limit(cursor, user_id, 'words_added')
-            if not success:
+            limit_check = check_limit(cursor, int(user_id), 'words')
+            if not limit_check['allowed']:
                 return {
                     'statusCode': 403,
                     'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
                     'body': json.dumps({
-                        'error': error_msg, 
+                        'error': 'Word limit exceeded', 
                         'limit_exceeded': True,
-                        'can_activate_trial': can_activate_trial
+                        'tier': limit_check['tier']
                     }),
                     'isBase64Encoded': False
                 }
@@ -501,7 +444,14 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             if added_words:
-                increment_usage(cursor, conn, user_id, 'words_added')
+                now = datetime.now()
+                period_start = datetime(now.year, now.month, 1).date()
+                cursor.execute(
+                    """UPDATE t_p7147437_shag_to_speak.subscription_usage 
+                       SET words_added = words_added + %s
+                       WHERE user_id = %s AND period_start = %s""",
+                    (len(added_words), user_id, period_start)
+                )
             
             conn.commit()
             
