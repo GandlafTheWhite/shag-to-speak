@@ -220,7 +220,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             amount = plan['price_rub']
             
             platega_payload = {
-                'paymentMethod': 'CardRu',
+                'paymentMethod': 2,
                 'paymentDetails': {
                     'amount': float(amount),
                     'currency': 'RUB'
