@@ -19,10 +19,6 @@ const tierInfo: Record<string, { name: string; features: string[] }> = {
   unlimited: {
     name: 'Unlimited',
     features: ['Безлимит слов', 'Безлимит наборов', 'Безлимит упражнений', 'Безлимит сортировок']
-  },
-  test: {
-    name: 'Тест',
-    features: ['Тестовый платёж выполнен успешно', 'Подписка не активирована']
   }
 };
 
@@ -40,26 +36,24 @@ export default function SubscriptionSuccessModal({ isOpen, onClose, tier }: Subs
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-            {tier === 'test' ? 'Тест успешен!' : 'Поздравляем! 🎉'}
+            Поздравляем! 🎉
           </h2>
           
           <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6">
-            {tier === 'test' 
-              ? 'Тестовый платёж прошёл успешно'
-              : `Вы оформили подписку ${info.name}`}
+            Вы оформили подписку {info.name}
           </p>
 
           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-600 rounded-2xl p-4 sm:p-6 mb-6">
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3 uppercase tracking-wide">
-              {tier === 'test' ? 'Информация' : 'Доступные функции'}
+              Доступные функции
             </h3>
             <ul className="space-y-2">
               {info.features.map((feature, index) => (
                 <li key={index} className="flex items-start gap-2">
                   <Icon 
-                    name={tier === 'test' ? 'Info' : 'Check'} 
+                    name="Check" 
                     size={18} 
-                    className={`flex-shrink-0 mt-0.5 ${tier === 'test' ? 'text-gray-500' : 'text-green-600 dark:text-green-400'}`}
+                    className="flex-shrink-0 mt-0.5 text-green-600 dark:text-green-400"
                   />
                   <span className="text-sm sm:text-base text-gray-700 dark:text-gray-200">{feature}</span>
                 </li>
@@ -71,7 +65,7 @@ export default function SubscriptionSuccessModal({ isOpen, onClose, tier }: Subs
             onClick={onClose}
             className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-3 rounded-xl text-base sm:text-lg font-bold shadow-lg"
           >
-            {tier === 'test' ? 'Понятно' : 'Ура! Начинаем путь'}
+            Ура! Начинаем путь
           </Button>
         </div>
       </div>
