@@ -95,6 +95,14 @@ def activate_subscription(cursor, conn, user_id: int, tier: str) -> None:
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     
+    # DEBUG: Логируем ВСЕ входящие запросы
+    print(f"[DEBUG] === INCOMING REQUEST ===")
+    print(f"[DEBUG] Method: {method}")
+    print(f"[DEBUG] Headers: {json.dumps(event.get('headers', {}), ensure_ascii=False)}")
+    print(f"[DEBUG] Query params: {json.dumps(event.get('queryStringParameters', {}), ensure_ascii=False)}")
+    print(f"[DEBUG] Body: {event.get('body', 'NO BODY')[:500]}")
+    print(f"[DEBUG] === END REQUEST ===")
+    
     if method == 'OPTIONS':
         return {
             'statusCode': 200,
@@ -115,6 +123,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     params = event.get('queryStringParameters') or {}
     action = params.get('action', 'status')
+    
+    print(f"[DEBUG] Parsed action: {action}")
+    print(f"[DEBUG] User ID: {user_id_str}")
+    print(f"[DEBUG] Merchant ID: {merchant_id}")
     
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -352,13 +364,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             }
         
         elif method == 'POST' and action == 'webhook':
+            print(f"[DEBUG] === WEBHOOK HANDLER START ===")
             expected_merchant_id = os.environ.get('PLATEGA_MERCHANT_ID')
             expected_secret = os.environ.get('PLATEGA_SECRET')
             
+            print(f"[DEBUG] Expected merchant: {expected_merchant_id}")
+            print(f"[DEBUG] Received merchant: {merchant_id}")
+            print(f"[DEBUG] Secret match: {secret == expected_secret}")
+            
             if not merchant_id or not secret:
+                print(f"[DEBUG] Missing auth headers")
                 return error_response(401, 'Missing authentication headers')
             
             if merchant_id != expected_merchant_id or secret != expected_secret:
+                print(f"[DEBUG] Invalid credentials")
                 return error_response(403, 'Invalid credentials')
             
             body_data = json.loads(event.get('body', '{}'))
@@ -366,7 +385,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             status = body_data.get('status')
             payload_str = body_data.get('payload', '{}')
             
+            print(f"[DEBUG] Webhook body parsed: transactionId={transaction_id}, status={status}")
+            
             if not transaction_id:
+                print(f"[DEBUG] Missing transactionId in body")
                 return error_response(400, 'Missing transactionId')
             
             try:
@@ -394,6 +416,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 }
             
             if status == 'success' or status == 'SUCCESS':
+                print(f"[DEBUG] Payment SUCCESS - updating transaction")
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
                        SET status = 'COMPLETED', confirmed_at = %s
@@ -403,11 +426,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 conn.commit()
                 
                 subscription_tier = tier or transaction['tier']
+                print(f"[DEBUG] Subscription tier: {subscription_tier}, user: {transaction['user_id']}")
                 
                 # Только для НЕ тестовых платежей активируем подписку
                 if subscription_tier != 'test':
+                    print(f"[DEBUG] Activating subscription for user {transaction['user_id']}")
                     activate_subscription(cursor, conn, transaction['user_id'], subscription_tier)
+                else:
+                    print(f"[DEBUG] Test payment - skipping subscription activation")
                 
+                print(f"[DEBUG] Webhook processed successfully")
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
