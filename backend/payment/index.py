@@ -383,15 +383,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return error_response(403, 'Invalid credentials')
             
             body_data = json.loads(event.get('body', '{}'))
-            transaction_id = body_data.get('transactionId')
+            # Platega в webhook отправляет поле "id", а не "transactionId"
+            transaction_id = body_data.get('id') or body_data.get('transactionId')
             status = body_data.get('status')
             payload_str = body_data.get('payload', '{}')
             
             print(f"[DEBUG] Webhook body parsed: transactionId={transaction_id}, status={status}")
             
             if not transaction_id:
-                print(f"[DEBUG] Missing transactionId in body")
-                return error_response(400, 'Missing transactionId')
+                print(f"[DEBUG] Missing transaction id in body")
+                return error_response(400, 'Missing transaction id')
             
             try:
                 payload = json.loads(payload_str) if isinstance(payload_str, str) else payload_str
