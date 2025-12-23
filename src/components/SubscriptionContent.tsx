@@ -7,6 +7,7 @@ import SubscriptionHeader from '@/components/subscription/SubscriptionHeader';
 import SubscriptionBanners from '@/components/subscription/SubscriptionBanners';
 import SubscriptionStatus from '@/components/subscription/SubscriptionStatus';
 import SubscriptionPlans from '@/components/subscription/SubscriptionPlans';
+import ProcessingPaymentBanner from '@/components/subscription/ProcessingPaymentBanner';
 import type { User } from '@/pages/Index';
 
 interface SubscriptionLimits {
@@ -16,6 +17,13 @@ interface SubscriptionLimits {
   status_changes: { used: number; limit: number; remaining: number };
 }
 
+interface PendingPayment {
+  exists: boolean;
+  tier?: string;
+  transaction_id?: string;
+  created_at?: string;
+}
+
 interface SubscriptionData {
   tier: string;
   status: string;
@@ -23,6 +31,7 @@ interface SubscriptionData {
   trial_days_left: number;
   subscription_end_date: string | null;
   can_activate_trial?: boolean;
+  pending_payment: PendingPayment;
   limits: SubscriptionLimits;
   available_plans: Array<{ tier: string; price: number }>;
 }
@@ -58,6 +67,31 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
     
     fetchSubscription();
   }, []);
+
+  useEffect(() => {
+    if (subscription?.pending_payment?.exists) {
+      const interval = setInterval(() => {
+        fetchSubscription();
+      }, 3000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [subscription?.pending_payment?.exists]);
+
+  useEffect(() => {
+    if (subscription && !subscription.pending_payment?.exists && subscription.status === 'active') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const wasProcessing = urlParams.get('payment') === 'success';
+      
+      if (wasProcessing && !isSuccessModalOpen) {
+        const tier = urlParams.get('tier');
+        if (tier) {
+          setPurchasedTier(tier);
+          setIsSuccessModalOpen(true);
+        }
+      }
+    }
+  }, [subscription?.pending_payment?.exists, subscription?.status]);
 
   const fetchSubscription = async () => {
     const userDataStr = localStorage.getItem('shagtospeak_user');
@@ -181,6 +215,13 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
       <SubscriptionHeader onNavigate={onNavigate} />
 
       <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-12 max-w-6xl">
+        {subscription.pending_payment?.exists && subscription.pending_payment.tier && subscription.pending_payment.created_at && (
+          <ProcessingPaymentBanner 
+            tier={subscription.pending_payment.tier}
+            createdAt={subscription.pending_payment.created_at}
+          />
+        )}
+
         <SubscriptionBanners 
           subscription={subscription}
           onOpenTrialModal={() => setIsTrialModalOpen(true)}
@@ -191,6 +232,7 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
         <SubscriptionPlans 
           currentTier={subscription.tier}
           isPaymentLoading={isPaymentLoading}
+          hasPendingPayment={subscription.pending_payment?.exists || false}
           onSubscribe={handleSubscribe}
         />
 

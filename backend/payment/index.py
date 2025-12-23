@@ -183,6 +183,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             )
             plans = cursor.fetchall()
             
+            cursor.execute(
+                """SELECT tier, transaction_id, created_at
+                   FROM t_p7147437_shag_to_speak.payment_transactions
+                   WHERE user_id = %s 
+                     AND status = 'PENDING'
+                     AND created_at > NOW() - INTERVAL '10 minutes'
+                   ORDER BY created_at DESC
+                   LIMIT 1""",
+                (user_id,)
+            )
+            pending_payment = cursor.fetchone()
+            
+            pending_payment_data = None
+            if pending_payment:
+                pending_payment_data = {
+                    'exists': True,
+                    'tier': pending_payment['tier'],
+                    'transaction_id': pending_payment['transaction_id'],
+                    'created_at': pending_payment['created_at'].isoformat()
+                }
+            else:
+                pending_payment_data = {'exists': False}
+            
             return {
                 'statusCode': 200,
                 'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
@@ -193,6 +216,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'trial_days_left': trial_days_left,
                     'subscription_end_date': sub_end.isoformat() if sub_end else None,
                     'can_activate_trial': not subscription['is_trial_used'],
+                    'pending_payment': pending_payment_data,
                     'limits': {
                         'words_added': {
                             'used': subscription['words_added'],
@@ -294,6 +318,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             user_id = int(user_id_str)
             body_data = json.loads(event.get('body', '{}'))
             tier = body_data.get('tier', 'basic')
+            
+            cursor.execute(
+                """SELECT transaction_id, created_at
+                   FROM t_p7147437_shag_to_speak.payment_transactions
+                   WHERE user_id = %s 
+                     AND tier = %s
+                     AND status = 'PENDING'
+                     AND created_at > NOW() - INTERVAL '5 minutes'
+                   ORDER BY created_at DESC
+                   LIMIT 1""",
+                (user_id, tier)
+            )
+            existing_pending = cursor.fetchone()
+            
+            if existing_pending:
+                cursor.execute(
+                    "SELECT price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s",
+                    (tier,)
+                )
+                plan = cursor.fetchone()
+                amount = plan['price_rub'] if plan else 0
+                
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                    'body': json.dumps({
+                        'success': True,
+                        'transaction_id': existing_pending['transaction_id'],
+                        'redirect_url': f'https://shagtospeak.ru/?page=subscription&payment=pending',
+                        'amount': amount,
+                        'tier': tier,
+                        'existing': True
+                    }),
+                    'isBase64Encoded': False
+                }
+            
+            cursor.execute(
+                """UPDATE t_p7147437_shag_to_speak.payment_transactions
+                   SET status = 'EXPIRED'
+                   WHERE user_id = %s 
+                     AND tier = %s
+                     AND status = 'PENDING'
+                     AND created_at <= NOW() - INTERVAL '5 minutes'""",
+                (user_id, tier)
+            )
+            conn.commit()
             
             cursor.execute(
                 "SELECT price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s",

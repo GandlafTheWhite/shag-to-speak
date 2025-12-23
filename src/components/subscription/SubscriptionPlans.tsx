@@ -13,6 +13,7 @@ interface Plan {
 interface SubscriptionPlansProps {
   currentTier: string;
   isPaymentLoading: boolean;
+  hasPendingPayment: boolean;
   onSubscribe: (tier: string, price: number) => void;
 }
 
@@ -56,7 +57,7 @@ const plans: Plan[] = [
   }
 ];
 
-export default function SubscriptionPlans({ currentTier, isPaymentLoading, onSubscribe }: SubscriptionPlansProps) {
+export default function SubscriptionPlans({ currentTier, isPaymentLoading, hasPendingPayment, onSubscribe }: SubscriptionPlansProps) {
   return (
     <div id="plans">
       <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Доступные тарифы</h2>
@@ -109,6 +110,14 @@ export default function SubscriptionPlans({ currentTier, isPaymentLoading, onSub
                   className="w-full bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold cursor-not-allowed"
                 >
                   Текущий тариф
+                </button>
+              ) : hasPendingPayment ? (
+                <button 
+                  disabled
+                  className="w-full bg-gray-400 dark:bg-gray-600 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <Icon name="Loader2" size={16} className="animate-spin" />
+                  <span>Оплата обрабатывается...</span>
                 </button>
               ) : (
                 <button 
