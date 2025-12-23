@@ -281,16 +281,20 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             tier = body_data.get('tier', 'basic')
             
-            cursor.execute(
-                "SELECT price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s",
-                (tier,)
-            )
-            plan = cursor.fetchone()
-            
-            if not plan:
-                return error_response(400, 'Invalid tier')
-            
-            amount = plan['price_rub']
+            # Для тестового тарифа используем фиксированную сумму
+            if tier == 'test':
+                amount = 10
+            else:
+                cursor.execute(
+                    "SELECT price_rub FROM t_p7147437_shag_to_speak.subscription_plans WHERE tier = %s",
+                    (tier,)
+                )
+                plan = cursor.fetchone()
+                
+                if not plan:
+                    return error_response(400, 'Invalid tier')
+                
+                amount = plan['price_rub']
             
             platega_payload = {
                 'paymentMethod': 2,
@@ -399,7 +403,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 conn.commit()
                 
                 subscription_tier = tier or transaction['tier']
-                activate_subscription(cursor, conn, transaction['user_id'], subscription_tier)
+                
+                # Только для НЕ тестовых платежей активируем подписку
+                if subscription_tier != 'test':
+                    activate_subscription(cursor, conn, transaction['user_id'], subscription_tier)
                 
                 return {
                     'statusCode': 200,

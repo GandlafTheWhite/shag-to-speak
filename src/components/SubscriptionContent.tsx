@@ -179,6 +179,18 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
 
   const plans = [
     { 
+      tier: 'test', 
+      name: 'Тест', 
+      price: 10, 
+      features: [
+        'Тестовый платёж',
+        'Не активирует подписку',
+        'Только для проверки'
+      ],
+      color: 'from-gray-400 to-gray-600',
+      isTest: true
+    },
+    { 
       tier: 'basic', 
       name: 'Basic', 
       price: 399, 
