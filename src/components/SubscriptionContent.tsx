@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import TrialOfferModal from '@/components/TrialOfferModal';
+import SubscriptionSuccessModal from '@/components/SubscriptionSuccessModal';
 import type { User } from '@/pages/Index';
 
 interface SubscriptionLimits {
@@ -35,8 +36,24 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
   const [error, setError] = useState<string | null>(null);
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
   const [isPaymentLoading, setIsPaymentLoading] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [purchasedTier, setPurchasedTier] = useState<string>('');
 
   useEffect(() => {
+    // Проверяем URL на наличие payment=success
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const tier = urlParams.get('tier');
+    
+    if (paymentStatus === 'success' && tier) {
+      setPurchasedTier(tier);
+      setIsSuccessModalOpen(true);
+      
+      // Очищаем URL от параметров оплаты
+      const newUrl = window.location.pathname + '?page=subscription';
+      window.history.replaceState({}, '', newUrl);
+    }
+    
     fetchSubscription();
   }, []);
 
@@ -469,6 +486,15 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
         onTrialActivated={() => {
           fetchSubscription();
         }}
+      />
+
+      <SubscriptionSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          fetchSubscription();
+        }}
+        tier={purchasedTier}
       />
     </div>
   );

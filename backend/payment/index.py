@@ -118,7 +118,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     headers = event.get('headers', {})
     user_id_str = headers.get('X-User-Id') or headers.get('x-user-id')
-    merchant_id = headers.get('X-MerchantId') or headers.get('x-merchantid')
+    # Platega отправляет X-Merchantid (не X-MerchantId!)
+    merchant_id = (headers.get('X-MerchantId') or headers.get('X-Merchantid') or 
+                   headers.get('x-merchantid') or headers.get('x-merchant-id'))
     secret = headers.get('X-Secret') or headers.get('x-secret')
     
     params = event.get('queryStringParameters') or {}
@@ -315,8 +317,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'currency': 'RUB'
                 },
                 'description': f'Подписка ShagToSpeak - тариф {tier}',
-                'return': 'https://airnold.poehali.dev/?payment=success',
-                'failedUrl': 'https://airnold.poehali.dev/?payment=failed',
+                'return': f'https://shagtospeak.ru/?page=subscription&payment=success&tier={tier}',
+                'failedUrl': 'https://shagtospeak.ru/?page=subscription&payment=failed',
                 'payload': json.dumps({'user_id': user_id, 'tier': tier})
             }
             
