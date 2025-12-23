@@ -21,6 +21,77 @@ def error_response(status: int, message: str) -> Dict[str, Any]:
     }
 
 
+def activate_subscription(cursor, conn, user_id: int, tier: str) -> None:
+    """
+    Активирует или продлевает подписку пользователя
+    - Trial → платная: меняем тариф, сбрасываем лимиты, +30 дней
+    - Та же подписка: продлеваем на +30 дней
+    - Апгрейд: меняем тариф, лимиты НЕ сбрасываем, +30 дней
+    """
+    now = datetime.now()
+    
+    cursor.execute(
+        """SELECT current_tier, subscription_end, subscription_status
+           FROM t_p7147437_shag_to_speak.subscription_usage
+           WHERE user_id = %s
+           ORDER BY subscription_end DESC NULLS LAST
+           LIMIT 1""",
+        (user_id,)
+    )
+    current_sub = cursor.fetchone()
+    
+    if not current_sub:
+        new_end = now + timedelta(days=30)
+        period_start = datetime(now.year, now.month, 1).date()
+        period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        
+        cursor.execute(
+            """INSERT INTO t_p7147437_shag_to_speak.subscription_usage
+               (user_id, current_tier, subscription_status, subscription_start, subscription_end,
+                period_start, period_end, words_added, word_sets_added, exercises_completed, status_changes)
+               VALUES (%s, %s, 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
+            (user_id, tier, now, new_end, period_start, period_end)
+        )
+        conn.commit()
+        return
+    
+    current_tier = current_sub['current_tier']
+    sub_end = current_sub['subscription_end']
+    is_active = current_sub['subscription_status'] == 'active' and sub_end and now < sub_end
+    
+    if current_tier == 'trial':
+        new_end = now + timedelta(days=30)
+        cursor.execute(
+            """UPDATE t_p7147437_shag_to_speak.subscription_usage
+               SET current_tier = %s,
+                   subscription_status = 'active',
+                   subscription_start = %s,
+                   subscription_end = %s,
+                   words_added = 0,
+                   word_sets_added = 0,
+                   exercises_completed = 0,
+                   status_changes = 0
+               WHERE user_id = %s""",
+            (tier, now, new_end, user_id)
+        )
+    else:
+        if is_active:
+            new_end = sub_end + timedelta(days=30)
+        else:
+            new_end = now + timedelta(days=30)
+        
+        cursor.execute(
+            """UPDATE t_p7147437_shag_to_speak.subscription_usage
+               SET current_tier = %s,
+                   subscription_status = 'active',
+                   subscription_end = %s
+               WHERE user_id = %s""",
+            (tier, new_end, user_id)
+        )
+    
+    conn.commit()
+
+
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
     
@@ -30,7 +101,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'headers': {
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-MerchantId, X-Secret',
+                'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-MerchantId, X-Secret, X-Transaction-Id',
                 'Access-Control-Max-Age': '86400'
             },
             'body': '',
@@ -39,6 +110,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     headers = event.get('headers', {})
     user_id_str = headers.get('X-User-Id') or headers.get('x-user-id')
+    merchant_id = headers.get('X-MerchantId') or headers.get('x-merchantid')
+    secret = headers.get('X-Secret') or headers.get('x-secret')
     
     params = event.get('queryStringParameters') or {}
     action = params.get('action', 'status')
@@ -274,22 +347,32 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'isBase64Encoded': False
             }
         
-        elif method == 'POST' and action == 'callback':
-            merchant_id = headers.get('X-MerchantId') or headers.get('x-merchantid')
-            secret = headers.get('X-Secret') or headers.get('x-secret')
+        elif method == 'POST' and action == 'webhook':
+            expected_merchant_id = os.environ.get('PLATEGA_MERCHANT_ID')
+            expected_secret = os.environ.get('PLATEGA_SECRET')
             
-            if merchant_id != os.environ['PLATEGA_MERCHANT_ID'] or secret != os.environ['PLATEGA_SECRET']:
-                return error_response(401, 'Invalid credentials')
+            if not merchant_id or not secret:
+                return error_response(401, 'Missing authentication headers')
+            
+            if merchant_id != expected_merchant_id or secret != expected_secret:
+                return error_response(403, 'Invalid credentials')
             
             body_data = json.loads(event.get('body', '{}'))
-            transaction_id = body_data.get('id')
-            payment_status = body_data.get('status')
+            transaction_id = body_data.get('transactionId')
+            status = body_data.get('status')
+            payload_str = body_data.get('payload', '{}')
             
             if not transaction_id:
-                return error_response(400, 'Transaction ID required')
+                return error_response(400, 'Missing transactionId')
+            
+            try:
+                payload = json.loads(payload_str) if isinstance(payload_str, str) else payload_str
+                tier = payload.get('tier')
+            except:
+                tier = None
             
             cursor.execute(
-                """SELECT user_id, tier, amount FROM t_p7147437_shag_to_speak.payment_transactions 
+                """SELECT user_id, tier, status FROM t_p7147437_shag_to_speak.payment_transactions
                    WHERE transaction_id = %s""",
                 (transaction_id,)
             )
@@ -298,58 +381,36 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             if not transaction:
                 return error_response(404, 'Transaction not found')
             
-            if payment_status == 'CONFIRMED':
-                user_id = transaction['user_id']
-                tier = transaction['tier']
-                
-                now = datetime.now()
-                subscription_start = now
-                subscription_end = now + timedelta(days=30)
-                period_start = datetime(now.year, now.month, 1).date()
-                period_end = (period_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-                
-                cursor.execute(
-                    """UPDATE t_p7147437_shag_to_speak.subscription_usage
-                       SET current_tier = %s,
-                           subscription_status = 'active',
-                           subscription_start = %s,
-                           subscription_end = %s,
-                           words_added = 0,
-                           word_sets_added = 0,
-                           exercises_completed = 0,
-                           status_changes = 0
-                       WHERE user_id = %s AND period_start = %s""",
-                    (tier, subscription_start, subscription_end, user_id, period_start)
-                )
-                
-                if cursor.rowcount == 0:
-                    cursor.execute(
-                        """INSERT INTO t_p7147437_shag_to_speak.subscription_usage
-                           (user_id, current_tier, subscription_status, subscription_start, subscription_end,
-                            period_start, period_end, words_added, word_sets_added, exercises_completed, status_changes)
-                           VALUES (%s, %s, 'active', %s, %s, %s, %s, 0, 0, 0, 0)""",
-                        (user_id, tier, subscription_start, subscription_end, period_start, period_end)
-                    )
-                
+            if transaction['status'] == 'COMPLETED':
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'message': 'Already processed'}),
+                    'isBase64Encoded': False
+                }
+            
+            if status == 'success' or status == 'SUCCESS':
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
-                       SET status = 'CONFIRMED', confirmed_at = %s
+                       SET status = 'COMPLETED', confirmed_at = %s
                        WHERE transaction_id = %s""",
-                    (now, transaction_id)
+                    (datetime.now(), transaction_id)
                 )
-                
                 conn.commit()
+                
+                subscription_tier = tier or transaction['tier']
+                activate_subscription(cursor, conn, transaction['user_id'], subscription_tier)
                 
                 return {
                     'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'message': 'Subscription activated', 'tier': tier}),
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'message': 'Payment processed successfully'}),
                     'isBase64Encoded': False
                 }
             else:
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
-                       SET status = 'CANCELED'
+                       SET status = 'FAILED'
                        WHERE transaction_id = %s""",
                     (transaction_id,)
                 )
@@ -357,10 +418,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 
                 return {
                     'statusCode': 200,
-                    'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
-                    'body': json.dumps({'message': 'Payment canceled'}),
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'message': 'Payment failed'}),
                     'isBase64Encoded': False
                 }
+        
+
         
         else:
             return error_response(400, f'Unknown action: {action}')

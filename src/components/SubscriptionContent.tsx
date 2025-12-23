@@ -34,6 +34,7 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isTrialModalOpen, setIsTrialModalOpen] = useState(false);
+  const [isPaymentLoading, setIsPaymentLoading] = useState(false);
 
   useEffect(() => {
     fetchSubscription();
@@ -87,6 +88,8 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
     const userData = JSON.parse(userDataStr);
     const userId = userData.id?.toString();
     
+    setIsPaymentLoading(true);
+    
     try {
       const response = await fetch(`${PAYMENT_URL}?action=create`, {
         method: 'POST',
@@ -111,6 +114,7 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
     } catch (err) {
       console.error('Payment creation failed:', err);
       alert(`Ошибка: ${err instanceof Error ? err.message : 'Попробуйте позже'}`);
+      setIsPaymentLoading(false);
     }
   };
 
@@ -422,9 +426,17 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
                   ) : (
                     <button 
                       onClick={() => handleSubscribe(plan.tier, plan.price)}
-                      className={`w-full bg-gradient-to-r ${plan.color} text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold hover:opacity-90 transition shadow-lg`}
+                      disabled={isPaymentLoading}
+                      className={`w-full bg-gradient-to-r ${plan.color} text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold hover:opacity-90 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
                     >
-                      Выбрать
+                      {isPaymentLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Открываем оплату...</span>
+                        </>
+                      ) : (
+                        'Выбрать'
+                      )}
                     </button>
                   )}
                 </div>
