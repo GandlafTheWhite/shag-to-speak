@@ -10,11 +10,20 @@ interface Plan {
   isTest?: boolean;
 }
 
+interface PendingPaymentData {
+  exists: boolean;
+  tier?: string;
+  transaction_id?: string;
+  created_at?: string;
+  redirect_url?: string;
+}
+
 interface SubscriptionPlansProps {
   currentTier: string;
   isPaymentLoading: boolean;
-  hasPendingPayment: boolean;
+  pendingPayment: PendingPaymentData;
   onSubscribe: (tier: string, price: number) => void;
+  onCancelPayment: () => void;
 }
 
 const plans: Plan[] = [
@@ -57,7 +66,13 @@ const plans: Plan[] = [
   }
 ];
 
-export default function SubscriptionPlans({ currentTier, isPaymentLoading, hasPendingPayment, onSubscribe }: SubscriptionPlansProps) {
+export default function SubscriptionPlans({ currentTier, isPaymentLoading, pendingPayment, onSubscribe, onCancelPayment }: SubscriptionPlansProps) {
+  const tierNames: Record<string, string> = {
+    basic: 'Basic',
+    pro: 'Pro',
+    unlimited: 'Unlimited'
+  };
+
   return (
     <div id="plans">
       <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Доступные тарифы</h2>
@@ -65,6 +80,7 @@ export default function SubscriptionPlans({ currentTier, isPaymentLoading, hasPe
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {plans.map(plan => {
           const isCurrentPlan = currentTier === plan.tier;
+          const isPendingForThisTier = pendingPayment.exists && pendingPayment.tier === plan.tier;
           
           return (
             <div 
@@ -72,6 +88,8 @@ export default function SubscriptionPlans({ currentTier, isPaymentLoading, hasPe
               className={`relative border-2 rounded-2xl p-4 sm:p-8 transition-all ${
                 isCurrentPlan 
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20 shadow-2xl md:scale-105' 
+                  : isPendingForThisTier
+                  ? 'border-orange-400 bg-orange-50 dark:bg-orange-950/20 shadow-2xl'
                   : plan.popular
                   ? 'border-purple-300 shadow-xl hover:shadow-2xl md:hover:scale-105'
                   : 'border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl md:hover:scale-105'
@@ -111,13 +129,45 @@ export default function SubscriptionPlans({ currentTier, isPaymentLoading, hasPe
                 >
                   Текущий тариф
                 </button>
-              ) : hasPendingPayment ? (
+              ) : isPendingForThisTier ? (
+                <div className="space-y-2">
+                  <div className="bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-xl p-3 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Icon name="Loader2" size={16} className="animate-spin text-orange-600" />
+                      <span className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                        Ожидаем оплату
+                      </span>
+                    </div>
+                    <p className="text-xs text-orange-700 dark:text-orange-400">
+                      {tierNames[plan.tier]} • {plan.price} ₽
+                    </p>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {pendingPayment.redirect_url && (
+                      <button
+                        onClick={() => window.open(pendingPayment.redirect_url, '_blank')}
+                        className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold hover:opacity-90 transition flex items-center justify-center gap-1.5"
+                      >
+                        <Icon name="ExternalLink" size={14} />
+                        <span>Продолжить</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={onCancelPayment}
+                      className="flex-1 bg-red-500 text-white py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-red-600 transition flex items-center justify-center gap-1.5"
+                    >
+                      <Icon name="X" size={14} />
+                      <span>Отменить</span>
+                    </button>
+                  </div>
+                </div>
+              ) : pendingPayment.exists ? (
                 <button 
                   disabled
-                  className="w-full bg-gray-400 dark:bg-gray-600 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                  className="w-full bg-gray-400 dark:bg-gray-600 text-white py-2.5 sm:py-3 rounded-xl text-sm sm:text-base font-bold cursor-not-allowed"
                 >
-                  <Icon name="Loader2" size={16} className="animate-spin" />
-                  <span>Оплата обрабатывается...</span>
+                  Оплата другого тарифа...
                 </button>
               ) : (
                 <button 

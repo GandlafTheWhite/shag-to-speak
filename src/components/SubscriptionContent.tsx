@@ -171,6 +171,35 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
     }
   };
 
+  const handleCancelPayment = async () => {
+    const userDataStr = localStorage.getItem('shagtospeak_user');
+    
+    if (!userDataStr) {
+      return;
+    }
+    
+    const userData = JSON.parse(userDataStr);
+    const userId = userData.id?.toString();
+    
+    try {
+      const response = await fetch(`${PAYMENT_URL}?action=cancel_payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        await fetchSubscription();
+      }
+    } catch (err) {
+      console.error('Cancel payment failed:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen">
@@ -232,8 +261,9 @@ export default function SubscriptionContent({ user, onNavigate }: SubscriptionCo
         <SubscriptionPlans 
           currentTier={subscription.tier}
           isPaymentLoading={isPaymentLoading}
-          hasPendingPayment={subscription.pending_payment?.exists || false}
+          pendingPayment={subscription.pending_payment || { exists: false }}
           onSubscribe={handleSubscribe}
+          onCancelPayment={handleCancelPayment}
         />
 
         <div className="mt-12 text-center text-muted-foreground text-sm">

@@ -184,7 +184,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             plans = cursor.fetchall()
             
             cursor.execute(
-                """SELECT tier, transaction_id, created_at
+                """SELECT tier, transaction_id, created_at, redirect_url
                    FROM t_p7147437_shag_to_speak.payment_transactions
                    WHERE user_id = %s 
                      AND status = 'PENDING'
@@ -201,7 +201,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'exists': True,
                     'tier': pending_payment['tier'],
                     'transaction_id': pending_payment['transaction_id'],
-                    'created_at': pending_payment['created_at'].isoformat()
+                    'created_at': pending_payment['created_at'].isoformat(),
+                    'redirect_url': pending_payment.get('redirect_url')
                 }
             else:
                 pending_payment_data = {'exists': False}
@@ -411,10 +412,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             
             cursor.execute(
                 """INSERT INTO t_p7147437_shag_to_speak.payment_transactions 
-                   (user_id, transaction_id, tier, amount, status, payment_method)
-                   VALUES (%s, %s, %s, %s, 'PENDING', %s)
+                   (user_id, transaction_id, tier, amount, status, payment_method, redirect_url)
+                   VALUES (%s, %s, %s, %s, 'PENDING', %s, %s)
                    RETURNING id""",
-                (user_id, transaction_id, tier, amount, 2)
+                (user_id, transaction_id, tier, amount, 2, redirect_url)
             )
             conn.commit()
             
@@ -427,6 +428,68 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'redirect_url': redirect_url,
                     'amount': amount,
                     'tier': tier
+                }),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'POST' and action == 'cancel_payment':
+            if not user_id_str:
+                return error_response(401, 'User ID required')
+            
+            user_id = int(user_id_str)
+            
+            cursor.execute(
+                """UPDATE t_p7147437_shag_to_speak.payment_transactions
+                   SET status = 'CANCELED'
+                   WHERE user_id = %s 
+                     AND status = 'PENDING'
+                     AND created_at > NOW() - INTERVAL '10 minutes'""",
+                (user_id,)
+            )
+            conn.commit()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'success': True,
+                    'message': 'Платёж отменён'
+                }),
+                'isBase64Encoded': False
+            }
+        
+        elif method == 'GET' and action == 'payment_history':
+            if not user_id_str:
+                return error_response(401, 'User ID required')
+            
+            user_id = int(user_id_str)
+            
+            cursor.execute(
+                """SELECT id, transaction_id, tier, amount, status, payment_method, 
+                          created_at, confirmed_at, redirect_url
+                   FROM t_p7147437_shag_to_speak.payment_transactions
+                   WHERE user_id = %s
+                   ORDER BY created_at DESC
+                   LIMIT 50""",
+                (user_id,)
+            )
+            transactions = cursor.fetchall()
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*'},
+                'body': json.dumps({
+                    'transactions': [{
+                        'id': t['id'],
+                        'transaction_id': str(t['transaction_id']),
+                        'tier': t['tier'],
+                        'amount': t['amount'],
+                        'status': t['status'],
+                        'payment_method': t['payment_method'],
+                        'created_at': t['created_at'].isoformat() if t['created_at'] else None,
+                        'confirmed_at': t['confirmed_at'].isoformat() if t['confirmed_at'] else None,
+                        'redirect_url': t.get('redirect_url')
+                    } for t in transactions]
                 }),
                 'isBase64Encoded': False
             }

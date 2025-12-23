@@ -10,6 +10,7 @@ import Achievements from '@/components/Achievements';
 import ProfileSetupWizard from '@/components/ProfileSetupWizard';
 import OnboardingPersonalization from '@/components/OnboardingPersonalization';
 import SubscriptionContent from '@/components/SubscriptionContent';
+import PaymentHistory from '@/components/PaymentHistory';
 import { apiClient } from '@/utils/api';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -34,7 +35,7 @@ export interface User {
 
 const Index = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription'>('landing');
+  const [currentPage, setCurrentPage] = useState<'landing' | 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription' | 'payment-history'>('landing');
   const [showProfileSetup, setShowProfileSetup] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isProfileLoading, setIsProfileLoading] = useState(false);
@@ -379,6 +380,12 @@ const Index = () => {
             />
           )}
         </>
+      )}
+      {currentPage === 'payment-history' && user && (
+        <PaymentHistory
+          user={user}
+          onNavigate={(page) => setCurrentPage(page)}
+        />
       )}
     </div>
   );

@@ -20,7 +20,7 @@ import SubscriptionLimitsCard from './SubscriptionLimitsCard';
 
 interface DashboardProps {
   user: User;
-  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription') => void;
+  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'achievements' | 'subscription' | 'payment-history') => void;
   onLogout: () => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -96,15 +96,32 @@ const Dashboard = ({ user, onNavigate, onLogout, updateUser }: DashboardProps) =
               className="hidden sm:flex bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90 gap-2"
               size="sm"
             >
-              <Icon name="Sparkles" size={16} />
+              <Icon name="CreditCard" size={16} />
               Подписка
+            </Button>
+            <Button 
+              onClick={() => onNavigate('payment-history')}
+              className="hidden sm:flex bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90 gap-2"
+              size="sm"
+              title="История платежей"
+            >
+              <Icon name="Receipt" size={16} />
+              История
             </Button>
             <Button 
               onClick={() => onNavigate('subscription')}
               className="sm:hidden bg-gradient-to-r from-purple-500 to-pink-500 text-white p-2"
               size="sm"
             >
-              <Icon name="Sparkles" size={16} />
+              <Icon name="CreditCard" size={16} />
+            </Button>
+            <Button 
+              onClick={() => onNavigate('payment-history')}
+              className="sm:hidden bg-gradient-to-r from-blue-500 to-cyan-500 text-white p-2"
+              size="sm"
+              title="История платежей"
+            >
+              <Icon name="Receipt" size={16} />
             </Button>
             <ThemeToggle />
             <Button variant="ghost" size="sm" onClick={() => onNavigate('settings')} className="flex-shrink-0">
