@@ -13,10 +13,19 @@ interface SubscriptionLimits {
   status_changes: { used: number; limit: number; remaining: number };
 }
 
+interface PendingPayment {
+  exists: boolean;
+  tier?: string;
+  transaction_id?: string;
+  created_at?: string;
+  redirect_url?: string;
+}
+
 interface SubscriptionData {
   tier: string;
   status: string;
   subscription_end_date: string | null;
+  pending_payment: PendingPayment;
   limits: SubscriptionLimits;
 }
 
@@ -107,6 +116,23 @@ export default function SubscriptionLimitsCard({ user, onNavigateToSubscription 
               </div>
             ) : subscription ? (
               <div className="space-y-4">
+                {subscription.pending_payment?.exists && subscription.pending_payment.tier && (
+                  <div className="bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-400 dark:border-orange-600 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon name="Loader2" size={16} className="animate-spin text-orange-600" />
+                      <span className="text-sm font-semibold text-orange-800 dark:text-orange-300">
+                        Обрабатываем платёж
+                      </span>
+                    </div>
+                    <p className="text-xs text-orange-700 dark:text-orange-400 mb-2">
+                      Тариф {tierNames[subscription.pending_payment.tier] || subscription.pending_payment.tier} • Ожидаем оплату
+                    </p>
+                    <div className="text-xs text-orange-600 dark:text-orange-400">
+                      Подписка обновится автоматически после завершения оплаты
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Тариф:</span>

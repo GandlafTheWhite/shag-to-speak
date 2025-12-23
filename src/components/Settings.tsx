@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 
 interface SettingsProps {
   user: User;
-  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings') => void;
+  onNavigate: (page: 'dashboard' | 'words' | 'learn' | 'progress' | 'help' | 'settings' | 'subscription' | 'payment-history') => void;
   updateUser: (data: Partial<User>) => void;
 }
 
@@ -117,22 +117,34 @@ const Settings = ({ user, onNavigate, updateUser }: SettingsProps) => {
 
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="font-display">Подписка</CardTitle>
+            <CardTitle className="font-display">Подписка и платежи</CardTitle>
             <CardDescription>
-              Управление тарифами и лимитами
+              Управление тарифами, лимитами и историей транзакций
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
                 Здесь вы можете просмотреть текущую подписку, выбрать подходящий тариф и управлять лимитами использования.
               </p>
-              <Link to="/subscription">
-                <Button className="w-full" size="lg" variant="default">
-                  <Icon name="Crown" size={20} className="mr-2" />
-                  Управление подпиской
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Button 
+                  onClick={() => onNavigate('subscription')}
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90" 
+                  size="lg"
+                >
+                  <Icon name="CreditCard" size={20} className="mr-2" />
+                  Подписка
                 </Button>
-              </Link>
+                <Button 
+                  onClick={() => onNavigate('payment-history')}
+                  className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white hover:opacity-90" 
+                  size="lg"
+                >
+                  <Icon name="Receipt" size={20} className="mr-2" />
+                  История платежей
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
