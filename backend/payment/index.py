@@ -418,8 +418,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'isBase64Encoded': False
                 }
             
-            if status == 'success' or status == 'SUCCESS':
-                print(f"[DEBUG] Payment SUCCESS - updating transaction")
+            # Platega отправляет "CONFIRMED" для успешных платежей, "CANCELED" для неуспешных
+            if status == 'CONFIRMED':
+                print(f"[DEBUG] Payment CONFIRMED - updating transaction")
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
                        SET status = 'COMPLETED', confirmed_at = %s
@@ -445,7 +446,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'message': 'Payment processed successfully'}),
                     'isBase64Encoded': False
                 }
-            else:
+            elif status == 'CANCELED':
+                print(f"[DEBUG] Payment CANCELED - marking as failed")
                 cursor.execute(
                     """UPDATE t_p7147437_shag_to_speak.payment_transactions
                        SET status = 'FAILED'
@@ -457,7 +459,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 return {
                     'statusCode': 200,
                     'headers': {'Content-Type': 'application/json'},
-                    'body': json.dumps({'message': 'Payment failed'}),
+                    'body': json.dumps({'message': 'Payment canceled'}),
+                    'isBase64Encoded': False
+                }
+            else:
+                print(f"[DEBUG] Unknown payment status: {status}")
+                return {
+                    'statusCode': 200,
+                    'headers': {'Content-Type': 'application/json'},
+                    'body': json.dumps({'message': f'Unknown status: {status}'}),
                     'isBase64Encoded': False
                 }
         
