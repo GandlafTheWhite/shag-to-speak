@@ -1,4 +1,0 @@
-runtime: python311
-entrypoint: index.handler
-timeout: 60
-memory: 256
